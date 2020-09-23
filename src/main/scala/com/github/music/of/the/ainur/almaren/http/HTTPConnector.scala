@@ -46,11 +46,10 @@ private[almaren] case class HTTP(
             Some(r.statusCode),
             Some(r.statusMessage))
           case Failure(f) => {
-            logger.debug("Almaren HTTP Request Error",f)
+            logger.error("Almaren HTTP Request Error",f)
             Response(id,`__ERROR__` = Some(f.getMessage()))
           }
         }
-        
       })
     })
     df
