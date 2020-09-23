@@ -3,34 +3,27 @@ package com.github.music.of.the.ainur.almaren.http
 import org.apache.spark.sql.{DataFrame,SaveMode}
 import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
-import com.github.music.of.the.ainur.almaren.state.core.{Target,Source}
+import com.github.music.of.the.ainur.almaren.state.core.Main
+import requests.Session
 
-private[almaren] case class SourceHTTP(table:String, options:Map[String,String]) extends Source {
-  def source(df: DataFrame): DataFrame = {
-    logger.info(s"table:{$table}, options:{$options}")
-    df.sparkSession.read.format("http")
-      .options(options)
-      .load(table)
-  }
-}
-
-private[almaren] case class TargetHTTP(table:String, options:Map[String,String],saveMode:SaveMode) extends Target {
-  def target(df: DataFrame): DataFrame = {
-    logger.info(s"table:{$table}, options:{$options}")
-    df.write.format("http")
-      .options(options)
-      .mode(saveMode)
-      .save(table)
+private[almaren] case class HTTP(headers:Map[String,String], url:String, method:String)(implicit session:Session) extends Main {
+  override def core(df: DataFrame): DataFrame = {
+//    logger.info(s"table:{$table}, options:{$options}")
+  
+    import df.sparkSession.implicits._
+    df.mapPartitions(partition => {
+      partition.map(row => {
+        row.getAs[String]("foo")
+         ""
+      })
+    })
     df
   }
 }
 
 private[almaren] trait HTTPConnector extends Core {
-  def targetHTTP(table:String, options:Map[String,String] = Map(),saveMode:SaveMode = SaveMode.ErrorIfExists): Option[Tree] =
-     TargetHTTP(table,options,saveMode)
-
-  def sourceHTTP(table:String, options:Map[String,String] = Map()): Option[Tree] =
-    SourceHTTP(table,options)
+  def HTTP(headers:Map[String,String], url:String, method:String)(implicit session:Session): Option[Tree] =
+     HTTP(headers,url,method)
 }
 
 object HTTP {
