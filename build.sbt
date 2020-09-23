@@ -42,7 +42,7 @@ ThisBuild / developers := List(
   )
 )
 
-ThisBuild / description := "BigQuery Connector For Almaren Framework"
+ThisBuild / description := "HTTP Connector For Almaren Framework"
 ThisBuild / licenses := List("Apache 2" -> new URL("http://www.apache.org/licenses/LICENSE-2.0.txt"))
 ThisBuild / homepage := Some(url("https://github.com/modakanalytics/http.almaren"))
 ThisBuild / organizationName := "Modak Analytics"
