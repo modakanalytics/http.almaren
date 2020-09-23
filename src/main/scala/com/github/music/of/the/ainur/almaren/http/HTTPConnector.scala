@@ -6,6 +6,7 @@ import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
 import requests.Session
 import scala.util.{Success,Failure,Try}
+import org.apache.spark.sql.Row
 
 private[almaren] case class Response(
   `__ID__`:String,
@@ -16,10 +17,18 @@ private[almaren] case class Response(
   `__ERROR__`:Option[String] = None
 )
 
-private[almaren] case class HTTP(params:Map[String,String], url:String, method:String)(implicit session:Session) extends Main {
 
+object Util {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
+}
+
+
+private[almaren] case class HTTP(
+  params:Map[String,String],
+  url:String, 
+  method:String,
+  request_closure:(Row,Session,String,Map[String,String],String) => requests.Response)(implicit session:Session) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"params:{$params}, url:{$url}, method:{$method}")
@@ -27,13 +36,8 @@ private[almaren] case class HTTP(params:Map[String,String], url:String, method:S
     import df.sparkSession.implicits._
     df.mapPartitions(partition => {
       partition.map(row => {
-        val data = row.getAs[String](DataCol)
-        val response = Try(method.toUpperCase match {
-          case "GET" => session.get(url, params = params, data = data)
-          case "POST" => session.post(url, params = params, data = data)
-          case method => throw new Exception(s"Invalid Method: $method")
-        })
-        val id = row.getAs[String](IdCol)
+        val response = Try(request_closure(row,session,url,params,method))
+        val id = row.getAs[String](Util.IdCol)
         response match {
           case Success(r) => Response(
             id,
@@ -54,8 +58,22 @@ private[almaren] case class HTTP(params:Map[String,String], url:String, method:S
 }
 
 private[almaren] trait HTTPConnector extends Core {
-  def HTTP(params:Map[String,String], url:String, method:String)(implicit session:Session): Option[Tree] =
-     HTTP(params,url,method)
+
+  private val default_handler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
+    val data = row.getAs[String](Util.DataCol)
+    method.toUpperCase match {
+      case "GET" => session.get(url, params = params, data = data)
+      case "POST" => session.post(url, params = params, data = data)
+      case method => throw new Exception(s"Invalid Method: $method")
+    }
+  }
+
+  def HTTP( 
+    params:Map[String,String] = Map(),
+    url:String,
+    method:String,
+    request_closure:(Row,Session,String,Map[String,String],String) => requests.Response = default_handler)(implicit session:Session = requests.Session()): Option[Tree] =
+     HTTP(params,url,method,request_closure)
 }
 
 object HTTP {
