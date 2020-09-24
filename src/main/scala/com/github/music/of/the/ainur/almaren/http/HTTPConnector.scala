@@ -51,7 +51,7 @@ private[almaren] case class MainHTTP(
             r.headers,
             Some(r.statusCode),
             Some(r.statusMessage),
-            elapsedTime)
+            `__ELAPSED_TIME__` = elapsedTime)
           case Failure(f) => {
             logger.error("Almaren HTTP Request Error",f)
             Result(id,`__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)

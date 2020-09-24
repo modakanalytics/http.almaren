@@ -35,10 +35,10 @@ class Test extends FunSuite with BeforeAndAfter {
   val newSession = () => requests.Session(headers = Map("Authorization" -> "Basic QWxhZGRpbjpPcGVuU2VzYW1l"))
 
   almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) as phones from foo group by id,name,age)
-    |SELECT concat('http://localhost:3000/fireshots/',name) as __URL__,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
-    .http(method = "POST", params = Map("id" -> "%name%"),session = newSession)
-  .deserializer("JSON","__BODY__")
-  .batch.show()
+    |SELECT concat('http://localhost:3000/xml/',name) as __URL__,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
+    .http(method = "GET",session = newSession)
+    .deserializer("XML","__BODY__")
+    .batch.show(false)
 
  // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {
