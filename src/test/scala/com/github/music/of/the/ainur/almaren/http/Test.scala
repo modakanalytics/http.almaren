@@ -35,9 +35,10 @@ class Test extends FunSuite with BeforeAndAfter {
 
 
   almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) as phones from foo group by id,name,age)
-    |SELECT id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
-  .http(url = "http://localhost:3000/fireshots",method = "POST")
-  .batch.show()
+    |SELECT name as name,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
+  .http(url = "http://localhost:3000/fireshots",method = "POST", params = Map("id" -> "%name%"))
+  .deserializer("JSON","__BODY__")
+  .batch.show(false)
 
  // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {

@@ -27,7 +27,7 @@ private[almaren] case class MainHTTP(
   params:Map[String,String],
   url:String, 
   method:String,
-  request_closure:(Row,Session,String,Map[String,String],String) => requests.Response,
+  requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response,
   session:() => requests.Session) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
@@ -38,7 +38,7 @@ private[almaren] case class MainHTTP(
     val result = df.mapPartitions(partition => {
       val s = session()
       partition.map(row => {
-        val response = Try(request_closure(row,s,url,params,method))
+        val response = Try(requestHandler(row,s,url,params,method))
         val id = row.getAs[Any](Util.IdCol).toString()
         response match {
           case Success(r) => Result(
@@ -60,25 +60,41 @@ private[almaren] case class MainHTTP(
 
 private[almaren] trait HTTPConnector extends Core {
 
-  val defaultHandler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
-    val data = row.getAs[String](Util.DataCol)
-    method.toUpperCase match {
-      case "GET" => session.get(url, params = params)
-      case "POST" => session.post(url, params = params, data = data)
-      case method => throw new Exception(s"Invalid Method: $method")
-    }
-  }
-
   def http( 
     params:Map[String,String] = Map(),
     url:String,
     method:String,
-    requestClosure:(Row,Session,String,Map[String,String],String) => requests.Response = defaultHandler,
+    requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response = HTTP.defaultHandler,
     session:() => requests.Session = () => requests.Session()): Option[Tree] =
-    MainHTTP(params,url,method,requestClosure,session)
+    MainHTTP(params,url,method,requestHandler,session)
   
 }
 
 object HTTP {
+  val defaultHandler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
+    val paramsWithPlaceHoplder = replacePlaceHolderMap(row,params)
+    val data = row.getAs[String](Util.DataCol)
+    method.toUpperCase match {
+      case "GET" => session.get(url, params = paramsWithPlaceHoplder)
+      case "POST" => session.post(url, params = paramsWithPlaceHoplder, data = data)
+      case method => throw new Exception(s"Invalid Method: $method")
+    }
+  }
+
+  val patternPlaceHolder = "%(\\w+)%".r
+
+  private def replacePlaceHolderMap(row:Row,params:Map[String,String]): Map[String,String] =
+    params.map( kv => {
+      replacePlaceHolder(row,kv._1) -> replacePlaceHolder(row,kv._2)
+    })
+
+  private def replacePlaceHolder(row:Row,text:String): String = {
+    text match {
+      case patternPlaceHolder(rowKey) => text.replaceAllLiterally(s"%$rowKey%", row.getAs[Any](rowKey).toString())
+      case _ => text
+    }
+    
+  }
+
   implicit class HTTPImplicit(val container: Option[Tree]) extends HTTPConnector
 }
