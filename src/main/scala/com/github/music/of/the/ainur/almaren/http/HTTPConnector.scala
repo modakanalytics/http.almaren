@@ -63,7 +63,6 @@ private[almaren] trait HTTPConnector extends Core {
 
   def http( 
     params:Map[String,String] = Map(),
-    url:String,
     method:String,
     requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response = HTTP.defaultHandler,
     session:() => requests.Session = () => requests.Session()): Option[Tree] =
