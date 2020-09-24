@@ -38,7 +38,7 @@ class Test extends FunSuite with BeforeAndAfter {
     |SELECT name as name,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
   .http(url = "http://localhost:3000/fireshots",method = "POST", params = Map("id" -> "%name%"))
   .deserializer("JSON","__BODY__")
-  .batch.show(false)
+  .batch.show()
 
  // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {

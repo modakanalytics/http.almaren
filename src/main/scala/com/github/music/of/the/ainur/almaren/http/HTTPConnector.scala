@@ -73,10 +73,11 @@ private[almaren] trait HTTPConnector extends Core {
 object HTTP {
   val defaultHandler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
     val paramsWithPlaceHoplder = replacePlaceHolderMap(row,params)
+    val urlWithPlaceHolder = replacePlaceHolder(row,url)
     val data = row.getAs[String](Util.DataCol)
     method.toUpperCase match {
-      case "GET" => session.get(url, params = paramsWithPlaceHoplder)
-      case "POST" => session.post(url, params = paramsWithPlaceHoplder, data = data)
+      case "GET" => session.get(urlWithPlaceHolder, params = paramsWithPlaceHoplder)
+      case "POST" => session.post(urlWithPlaceHolder, params = paramsWithPlaceHoplder, data = data)
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
