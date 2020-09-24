@@ -14,13 +14,14 @@ private[almaren] case class Result(
   `__HEADER__`:Map[String,Seq[String]] = Map(),
   `__STATUS_CODE__`:Option[Int] = None,
   `__STATUS_MSG__`:Option[String] = None,
-  `__ERROR__`:Option[String] = None
+  `__ERROR__`:Option[String] = None,
+  `__ELAPSED_TIME__`:Long
 )
 
 object Alias {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
-  val Url = "__URL__"
+  val UrlCol = "__URL__"
 }
 
 
@@ -38,8 +39,10 @@ private[almaren] case class MainHTTP(
     val result = df.mapPartitions(partition => {
       val s = session()
       partition.map(row => {
-        val url = row.getAs[Any](Alias.Url).toString()
+        val url = row.getAs[Any](Alias.UrlCol).toString()
+        val startTime = System.currentTimeMillis()
         val response = Try(requestHandler(row,s,url,params,method))
+        val elapsedTime = System.currentTimeMillis() - startTime
         val id = row.getAs[Any](Alias.IdCol).toString()
         response match {
           case Success(r) => Result(
@@ -47,10 +50,11 @@ private[almaren] case class MainHTTP(
             Some(r.text()),
             r.headers,
             Some(r.statusCode),
-            Some(r.statusMessage))
+            Some(r.statusMessage),
+            elapsedTime)
           case Failure(f) => {
             logger.error("Almaren HTTP Request Error",f)
-            Result(id,`__ERROR__` = Some(f.getMessage()))
+            Result(id,`__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
           }
         }
       })
