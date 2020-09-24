@@ -8,7 +8,7 @@ import requests.Session
 import scala.util.{Success,Failure,Try}
 import org.apache.spark.sql.Row
 
-private[almaren] case class Response(
+private[almaren] case class Result(
   `__ID__`:String,
   `__BODY__`:Option[String] = None,
   `__HEADER__`:Map[String,Seq[String]] = Map(),
@@ -17,6 +17,7 @@ private[almaren] case class Response(
   `__ERROR__`:Option[String] = None
 )
 
+case class Lixo(id:String)
 
 object Util {
   val DataCol = "__DATA__"
@@ -28,18 +29,23 @@ private[almaren] case class HTTP(
   params:Map[String,String],
   url:String, 
   method:String,
-  request_closure:(Row,Session,String,Map[String,String],String) => requests.Response)(implicit session:Session) extends Main {
+  request_closure:(Row,Session,String,Map[String,String],String) => requests.Response,
+  session:() => requests.Session) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"params:{$params}, url:{$url}, method:{$method}")
-  
+
+
     import df.sparkSession.implicits._
-    df.mapPartitions(partition => {
+     
+
+    val result = df.mapPartitions(partition => {
+      val s = session()
       partition.map(row => {
-        val response = Try(request_closure(row,session,url,params,method))
-        val id = row.getAs[String](Util.IdCol)
+        val response = Try(request_closure(row,s,url,params,method))
+        val id = row.getAs[Any](Util.IdCol).toString()
         response match {
-          case Success(r) => Response(
+          case Success(r) => Result(
             id,
             Some(r.text()),
             r.headers,
@@ -47,32 +53,34 @@ private[almaren] case class HTTP(
             Some(r.statusMessage))
           case Failure(f) => {
             logger.error("Almaren HTTP Request Error",f)
-            Response(id,`__ERROR__` = Some(f.getMessage()))
+            Result(id,`__ERROR__` = Some(f.getMessage()))
           }
         }
       })
     })
-    df
+    result.toDF
   }
 }
 
 private[almaren] trait HTTPConnector extends Core {
 
-  private val default_handler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
+  val default_handler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
     val data = row.getAs[String](Util.DataCol)
     method.toUpperCase match {
-      case "GET" => session.get(url, params = params, data = data)
+      case "GET" => session.get(url, params = params)
       case "POST" => session.post(url, params = params, data = data)
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
 
-  def HTTP( 
+  def http( 
     params:Map[String,String] = Map(),
     url:String,
     method:String,
-    request_closure:(Row,Session,String,Map[String,String],String) => requests.Response = default_handler)(implicit session:Session = requests.Session()): Option[Tree] =
-     HTTP(params,url,method,request_closure)
+    requestClosure:(Row,Session,String,Map[String,String],String) => requests.Response = default_handler,
+    session:() => requests.Session = () => requests.Session()): Option[Tree] =
+    HTTP(params,url,method,requestClosure,session)
+  
 }
 
 object HTTP {

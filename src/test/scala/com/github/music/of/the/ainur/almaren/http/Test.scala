@@ -6,15 +6,35 @@ import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
 
+case class Data(id:Long, name:String, age:Int, phone:String)
+
 class Test extends FunSuite with BeforeAndAfter {
   val almaren = Almaren("bigQuery-almaren")
+
   val spark: SparkSession = almaren.spark
     .master("local[*]")
     .config("spark.ui.enabled", "false")
     .config("spark.sql.shuffle.partitions", "1")
     .getOrCreate()
+
   spark.sparkContext.setLogLevel("ERROR")
 
+
+  import spark.implicits._
+  val df = List(
+    Data(1,"daniel",30,"555456123"),
+    Data(1,"daniel",30,"555456999"),
+    Data(2,"peter",25,"555456123"),
+    Data(3,"sara",45,"555454677"),
+    Data(4,"alice",88,"555555123")
+  ).toDF
+
+  df.createOrReplaceTempView("foo")
+
+  almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) from foo group by id,name,age)
+    |SELECT id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
+  .http(url = "http://localhost:3001",method = "POST")
+  .batch.show(false)
 
  // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {
