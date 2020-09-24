@@ -1,4 +1,5 @@
 package com.github.music.of.the.ainur.almaren.http
+
 import org.apache.spark.sql.{AnalysisException, Column, DataFrame, SaveMode, SparkSession}
 import org.scalatest._
 import org.apache.spark.sql.functions._
@@ -31,10 +32,12 @@ class Test extends FunSuite with BeforeAndAfter {
 
   df.createOrReplaceTempView("foo")
 
-  almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) from foo group by id,name,age)
+
+
+  almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) as phones from foo group by id,name,age)
     |SELECT id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
-  .http(url = "http://localhost:3001",method = "POST")
-  .batch.show(false)
+  .http(url = "http://localhost:3001/foo/bar",method = "POST")
+  .batch.show()
 
  // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {

@@ -17,8 +17,6 @@ private[almaren] case class Result(
   `__ERROR__`:Option[String] = None
 )
 
-case class Lixo(id:String)
-
 object Util {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
@@ -35,10 +33,8 @@ private[almaren] case class HTTP(
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"params:{$params}, url:{$url}, method:{$method}")
 
-
     import df.sparkSession.implicits._
      
-
     val result = df.mapPartitions(partition => {
       val s = session()
       partition.map(row => {
@@ -64,7 +60,7 @@ private[almaren] case class HTTP(
 
 private[almaren] trait HTTPConnector extends Core {
 
-  val default_handler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
+  val defaultHandler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
     val data = row.getAs[String](Util.DataCol)
     method.toUpperCase match {
       case "GET" => session.get(url, params = params)
@@ -77,7 +73,7 @@ private[almaren] trait HTTPConnector extends Core {
     params:Map[String,String] = Map(),
     url:String,
     method:String,
-    requestClosure:(Row,Session,String,Map[String,String],String) => requests.Response = default_handler,
+    requestClosure:(Row,Session,String,Map[String,String],String) => requests.Response = defaultHandler,
     session:() => requests.Session = () => requests.Session()): Option[Tree] =
     HTTP(params,url,method,requestClosure,session)
   
