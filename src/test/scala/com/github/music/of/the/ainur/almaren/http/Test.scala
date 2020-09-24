@@ -32,11 +32,11 @@ class Test extends FunSuite with BeforeAndAfter {
 
   df.createOrReplaceTempView("foo")
 
-
+  val newSession = () => requests.Session(headers = Map("Authorization" -> "Basic QWxhZGRpbjpPcGVuU2VzYW1l"))
 
   almaren.builder.sourceSql("""WITH bar AS (select id,name,age,collect_list(phone) as phones from foo group by id,name,age)
-    |SELECT name as name,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
-  .http(url = "http://localhost:3000/fireshots",method = "POST", params = Map("id" -> "%name%"))
+    |SELECT concat('http://localhost:3000/fireshots/',name) as __URL__,id as __ID__, to_json(struct(*)) as __DATA__ FROM bar""".stripMargin)
+    .http(url = "http://localhost:3000/fireshots",method = "POST", params = Map("id" -> "%name%"),session = newSession)
   .deserializer("JSON","__BODY__")
   .batch.show()
 
