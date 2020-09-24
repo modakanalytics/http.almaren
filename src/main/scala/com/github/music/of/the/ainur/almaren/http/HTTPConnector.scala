@@ -23,7 +23,7 @@ object Util {
 }
 
 
-private[almaren] case class HTTP(
+private[almaren] case class MainHTTP(
   params:Map[String,String],
   url:String, 
   method:String,
@@ -75,7 +75,7 @@ private[almaren] trait HTTPConnector extends Core {
     method:String,
     requestClosure:(Row,Session,String,Map[String,String],String) => requests.Response = defaultHandler,
     session:() => requests.Session = () => requests.Session()): Option[Tree] =
-    HTTP(params,url,method,requestClosure,session)
+    MainHTTP(params,url,method,requestClosure,session)
   
 }
 
