@@ -26,13 +26,13 @@ object Alias {
 
 
 private[almaren] case class MainHTTP(
-  params:Map[String,String],
+  headers:Map[String,String],
   method:String,
   requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response,
   session:() => requests.Session) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
-    logger.info(s"params:{$params}, method:{$method}")
+    logger.info(s"headers:{$headers}, method:{$method}")
 
     import df.sparkSession.implicits._
      
@@ -41,7 +41,7 @@ private[almaren] case class MainHTTP(
       partition.map(row => {
         val url = row.getAs[Any](Alias.UrlCol).toString()
         val startTime = System.currentTimeMillis()
-        val response = Try(requestHandler(row,s,url,params,method))
+        val response = Try(requestHandler(row,s,url,headers,method))
         val elapsedTime = System.currentTimeMillis() - startTime
         val id = row.getAs[Any](Alias.IdCol).toString()
         response match {
@@ -66,22 +66,24 @@ private[almaren] case class MainHTTP(
 private[almaren] trait HTTPConnector extends Core {
 
   def http( 
-    params:Map[String,String] = Map(),
+    headers:Map[String,String] = Map(),
     method:String,
     requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response = HTTP.defaultHandler,
-    session:() => requests.Session = () => requests.Session()): Option[Tree] =
-    MainHTTP(params,method,requestHandler,session)
+    session:() => requests.Session = HTTP.defaultSession): Option[Tree] =
+    MainHTTP(headers,method,requestHandler,session)
   
 }
 
 object HTTP {
-  val defaultHandler = (row:Row,session:Session,url:String, params:Map[String,String], method:String) => {
+  val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = params)
-      case "POST" => session.post(url, params = params, data = row.getAs[String](Alias.DataCol))
+      case "GET" => session.get(url, params = headers)
+      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol))
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
+
+  val defaultSession = () => requests.Session()
 
   implicit class HTTPImplicit(val container: Option[Tree]) extends HTTPConnector
 }
