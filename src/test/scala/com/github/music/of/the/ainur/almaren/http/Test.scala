@@ -10,7 +10,7 @@ import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
 case class Data(id:Long, name:String, age:Int, phone:String)
 
 class Test extends FunSuite with BeforeAndAfter {
-  val almaren = Almaren("bigQuery-almaren")
+  val almaren = Almaren("http-almaren")
 
   val spark: SparkSession = almaren.spark
     .master("local[*]")
