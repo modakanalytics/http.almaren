@@ -1,0 +1,51 @@
+language: scala
+
+jdk: openjdk8
+
+scala:
+  - 2.11.12
+
+cache:
+  directories:
+    - $HOME/.cache/coursier
+    - $HOME/.ivy2/cache
+    - $HOME/.sbt
+
+before_cache:
+  - sudo apt-get -y install perl
+  - rm -fv $HOME/.ivy2/.sbt.ivy.lock
+  - find $HOME/.ivy2/cache -name "ivydata-*.properties" -print -delete
+  - find $HOME/.sbt        -name "*.lock"               -print -delete
+
+services:
+  - postgresql
+
+
+before_script:
+  - cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
+  - cpanm Mojolicious
+  - cpanm JSON::Parse
+  - perl src/test/resources/script/mock_api.pl daemon -m dev -l http://\*:3000 &
+
+after_script:
+  - killall -9 perl
+
+script:
+  - sbt +test
+
+deploy:
+  provider: script
+  script: sbt +publish
+  on:
+    tags: true
+  skip_cleanup: true
+
+notifications:
+  webhooks: https://outlook.office.com/webhook/cb18d0c5-293b-4322-8c51-4091c45ef573@fdcf6fad-c3f0-4c66-8ca1-1e3aaac65150/TravisCI/72e0bd54da83457c9ded63ce3215f583/8aff3cf0-3144-4b2e-a8d6-0680efbc7b47
+  on_success: always # default: always
+  on_failure: always # default: always
+  on_start:   never # default: never
+  on_cancel:  always # default: always
+  on_error:   always # default: always
+
+
