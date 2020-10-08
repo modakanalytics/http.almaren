@@ -39,6 +39,12 @@ ThisBuild / developers := List(
     name  = "Daniel Mantovani",
     email = "daniel.mantovani@modak.com",
     url   = url("https://github.com/music-of-the-ainur")
+  ),
+ Developer(
+    id    = "praveenkumarb1207",
+    name  = "Praveen Kumar",
+    email = "praveen.bachu@modak.com",
+    url   = url("https://github.com/music-of-the-ainur")
   )
 )
 
