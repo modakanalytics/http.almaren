@@ -15,11 +15,11 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 ### Input :
 #### Parameters
 
-| Parameters | Description             |
-|------------|-------------------------|
-| __ __ID__ __  (Mandatory)    | This field will be in response of http.almaren component, it's useful to join data.   |
-| __ __URL__ __ (Mandatory)  |  Used to perform the HTTP request .   |
-| __ __DATA__ __      | Data Content (productName,producePrice) , used in POST Method HTTP requests .  |
+| Parameters | Mandatory  | Description             |
+|------------|------------|-------------|
+| __ __ID__ __   | Yes   | This field will be in response of http.almaren component, it's useful to join data   |
+| __ __URL__ __  | Yes   |  Used to perform the HTTP request    |
+| __ __DATA__ __ |  No   | Data Content (productName,producePrice) , used in POST Method HTTP requests   |
 
 
 ### Output:
@@ -27,13 +27,13 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 | Parameters | Description             |
 |------------|-------------------------|
-| __ __ID__ __     | Custom ID , This field will be useful to join data .   |
-| __ __BODY__ __     | HTTP response .   |
-| __ __HEADER__ __     | HTTP header .   |
-| __ __STATUS_CODE__ __     |HTTP response code .   |
-| __ __STATUS_MSG__ __  | HTTP response message .  |
-| __ __ERROR__ __ | Java Exception .  |
-| __ __ELAPSED_TIME__ __   | Request time in ms .  |
+| __ __ID__ __     | Custom ID , This field will be useful to join data    |
+| __ __BODY__ __     | HTTP response    |
+| __ __HEADER__ __     | HTTP header    |
+| __ __STATUS_CODE__ __     |HTTP response code    |
+| __ __STATUS_MSG__ __  | HTTP response message   |
+| __ __ERROR__ __ | Java Exception   |
+| __ __ELAPSED_TIME__ __   | Request time in ms   |
 
 
 

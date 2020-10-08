@@ -33,19 +33,5 @@ after_script:
 script:
   - sbt +test
 
-deploy:
-  provider: script
-  script: sbt +publish
-  on:
-    tags: true
-  skip_cleanup: true
-
-notifications:
-  webhooks: https://outlook.office.com/webhook/cb18d0c5-293b-4322-8c51-4091c45ef573@fdcf6fad-c3f0-4c66-8ca1-1e3aaac65150/TravisCI/72e0bd54da83457c9ded63ce3215f583/8aff3cf0-3144-4b2e-a8d6-0680efbc7b47
-  on_success: always # default: always
-  on_failure: always # default: always
-  on_start:   never # default: never
-  on_cancel:  always # default: always
-  on_error:   always # default: always
 
 
