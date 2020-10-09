@@ -22,11 +22,6 @@ libraryDependencies ++= Seq(
 
 enablePlugins(GitVersioning)
 
-resolvers += "spring" at "https://repo.spring.io/plugins-release"
-
-resolvers +=
-  "Sonatype OSS Snapshots" at "https://oss.sonatype.org/service/local/repositories/releases/content"
-
 ThisBuild / scmInfo := Some(
   ScmInfo(
     url("https://github.com/modakanalytics/http.almaren"),
