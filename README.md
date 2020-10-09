@@ -17,7 +17,7 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 | Parameters   | Mandatory | Description                                                                        |
 |--------------|-----------|------------------------------------------------------------------------------------|
-| \__\__ID\_\_ | Yes       | This field will be in response of http.almaren component, it's useful to join data |
+| \_\__ID\_\_ | Yes       | This field will be in response of http.almaren component, it's useful to join data |
 | \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
 | \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
 
@@ -27,7 +27,7 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 | Parameters           | Description                                        |
 |----------------------|----------------------------------------------------|
-| \_\__ID\__\__        | Custom ID , This field will be useful to join data |
+| \_\__ID\_\_       | Custom ID , This field will be useful to join data |
 | \_\_BODY\_\_         | HTTP response                                      |
 | \_\_HEADER\_\_       | HTTP header                                        |
 | \_\_STATUS_CODE\_\_  | HTTP response code                                 |
