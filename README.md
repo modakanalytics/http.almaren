@@ -15,32 +15,40 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 ### Input :
 #### Parameters
 
-| Parameters     | Mandatory | Description                                                                        |
-|----------------|-----------|------------------------------------------------------------------------------------|
-| __ __ID__ __   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
-| __ __URL__ __  | Yes       | Used to perform the HTTP request                                                   |
-| __ __DATA__ __ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
+| Parameters   | Mandatory | Description                                                                        |
+|--------------|-----------|------------------------------------------------------------------------------------|
+| \__\__ID\_\_ | Yes       | This field will be in response of http.almaren component, it's useful to join data |
+| \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
+| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
 
 
 ### Output:
 #### Parameters
 
-| Parameters             | Description                                        |
-|------------------------|----------------------------------------------------|
-| __ __ID__ __           | Custom ID , This field will be useful to join data |
-| __ __BODY__ __         | HTTP response                                      |
-| __ __HEADER__ __       | HTTP header                                        |
-| __ __STATUS_CODE__ __  | HTTP response code                                 |
-| __ __STATUS_MSG__ __   | HTTP response message                              |
-| __ __ERROR__ __        | Java Exception                                     |
-| __ __ELAPSED_TIME__ __ | Request time in ms                                 |
+| Parameters           | Description                                        |
+|----------------------|----------------------------------------------------|
+| \_\__ID\__\__        | Custom ID , This field will be useful to join data |
+| \_\_BODY\_\_         | HTTP response                                      |
+| \_\_HEADER\_\_       | HTTP header                                        |
+| \_\_STATUS_CODE\_\_  | HTTP response code                                 |
+| \_\_STATUS_MSG\_\_   | HTTP response message                              |
+| \_\_ERROR\_\_        | Java Exception                                     |
+| \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
 
 
 ## Session
 
-You can give an existing session to the HTTP component, it's useful when you need authentication:
+You can give an existing [session](https://github.com/lihaoyi/requests-scala#sessions) to the HTTP component.
+
+
 
 ```scala
+val newSession = () => requests.Session(headers = Map("Authorization" -> "Basic QWxhZGRpbjpPcGVuU2VzYW1l"))
+
+almaren.builder
+    .sourceSql("SELECT concat('http://localhost:3000/fireshots/',first_name,last_name,'/',country) as __URL__,id as __ID__")
+    .http(method = methodType, session = newSession)
+
 ```
 
 #### Example
