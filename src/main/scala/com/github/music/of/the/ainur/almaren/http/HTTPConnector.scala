@@ -8,7 +8,7 @@ import requests.Session
 import scala.util.{Success,Failure,Try}
 import org.apache.spark.sql.Row
 
-private[almaren] case class Result(
+private[almaren] final case class Result(
   `__ID__`:String,
   `__BODY__`:Option[String] = None,
   `__HEADER__`:Map[String,Seq[String]] = Map(),
@@ -78,7 +78,11 @@ object HTTP {
   val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String) => {
     method.toUpperCase match {
       case "GET" => session.get(url, params = headers)
+      case "DELETE" => session.delete(url, params = headers)
+      case "OPTIONS" => session.options(url, params = headers)
+      case "HEAD" => session.head(url, params = headers)
       case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol))
+      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol))
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
