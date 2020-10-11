@@ -46,7 +46,8 @@ val df = almaren.builder
                 D.lastName,D.age,
                 T.__STATUS_CODE__ as status_code,
                 T.url,
-                T.__ERROR__ as error
+                T.__ERROR__ as error,
+                T.__ELAPSED_TIME__ as request_time
             FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__""")
     .batch
 
@@ -55,31 +56,32 @@ df.show(false)
 
 Output:
 ```
-20/10/11 10:22:15 INFO SourceSql: sql:{SELECT uuid() as id,* FROM USER_DATA}
-20/10/11 10:22:15 INFO Alias: {DATA}
-20/10/11 10:22:15 INFO Sql: sql:{SELECT
+20/10/11 10:28:11 INFO SourceSql: sql:{SELECT uuid() as id,* FROM USER_DATA}
+20/10/11 10:28:11 INFO Alias: {DATA}
+20/10/11 10:28:11 INFO Sql: sql:{SELECT
                 id as __ID__,
                 concat('http://httpbin.org/anything/person/',code) as __URL__,
                 to_json(named_struct('data',named_struct('name',firstName + " " + lastName))) as __DATA__
             FROM DATA}
-20/10/11 10:22:15 INFO MainHTTP: headers:{Map()}, method:{POST}
-20/10/11 10:22:15 INFO JsonDeserializer: columnName:{__BODY__}, schema:{Some(`data` STRING,`headers` STRUCT<`Accept`: STRING, `Accept-Encoding`: STRING, `Cache-Control`: STRING, `Content-Length`: STRING, `Content-Type`: STRING, `Host`: STRING, `Pragma`: STRING, `User-Agent`: STRING, `X-Amzn-Trace-Id`: STRING>,`method` STRING,`origin` STRING,`url` STRING)}
-20/10/11 10:22:15 INFO Sql: sql:{SELECT
+20/10/11 10:28:11 INFO MainHTTP: headers:{Map()}, method:{POST}
+20/10/11 10:28:11 INFO JsonDeserializer: columnName:{__BODY__}, schema:{Some(`data` STRING,`headers` STRUCT<`Accept`: STRING, `Accept-Encoding`: STRING, `Cache-Control`: STRING, `Content-Length`: STRING, `Content-Type`: STRING, `Host`: STRING, `Pragma`: STRING, `User-Agent`: STRING, `X-Amzn-Trace-Id`: STRING>,`method` STRING,`origin` STRING,`url` STRING)}
+20/10/11 10:28:11 INFO Sql: sql:{SELECT
                 T.origin,
                 D.firstName,
                 D.lastName,D.age,
                 T.__STATUS_CODE__ as status_code,
                 T.url,
-                T.__ERROR__ as error
+                T.__ERROR__ as error,
+                T.__ELAPSED_TIME__ as request_time
             FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__}
-
-+-------------+---------+--------+---+-----------+---------------------------------------------+-----+
-|origin       |firstName|lastName|age|status_code|url                                          |error|
-+-------------+---------+--------+---+-----------+---------------------------------------------+-----+
-|151.68.13.200|Roger    |Laura   |25 |200        |http://httpbin.org/anything/person/2342324232|null |
-|151.68.13.200|Robert   |Dickson |88 |200        |http://httpbin.org/anything/person/3218313131|null |
-|151.68.13.200|Daniel   |Pedro   |28 |200        |http://httpbin.org/anything/person/32323232  |null |
-+-------------+---------+--------+---+-----------+---------------------------------------------+-----+
+            
++-------------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
+|origin       |firstName|lastName|age|status_code|url                                          |error|request_time|
++-------------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
+|151.68.13.200|Roger    |Laura   |25 |200        |http://httpbin.org/anything/person/2342324232|null |421         |
+|151.68.13.200|Robert   |Dickson |88 |200        |http://httpbin.org/anything/person/3218313131|null |409         |
+|151.68.13.200|Daniel   |Pedro   |28 |200        |http://httpbin.org/anything/person/32323232  |null |409         |
++-------------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
 ```
 
 ## Input and Output
