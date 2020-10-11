@@ -84,9 +84,7 @@ Output:
 +-------------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
 ```
 
-## Input and Output
-
-_http_ component parameters:
+## Parameters
 
 | Parameter      | Description                     | Type                                                               |
 |----------------|---------------------------------|--------------------------------------------------------------------|
@@ -96,7 +94,7 @@ _http_ component parameters:
 | session        | Closure to handle HTTP sessions | () = requests.Session                                              |
 
 
-*HTTP Component* special _columns_: 
+## Special Columns
 
 ### Input :
 #### Parameters
