@@ -12,7 +12,7 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 ## Input and Output
 
-_http_ parameters:
+_http_ component parameters:
 
 | Parameter      | Description                     | Type                                                               |
 |----------------|---------------------------------|--------------------------------------------------------------------|
