@@ -20,7 +20,13 @@ import spark.implicits._
 
 // Generating table "USER_DATA"
 
-List(Data("Roger","Laura",25,2342324232L),Data("Robert","Dickson",88,3218313131L),Data("Daniel","Pedro",28,32323232L)).toDS.createOrReplaceTempView("USER_DATA")
+case class Data(firstName:String, lastName:String, age:Int, code:Long)
+
+List(Data("Roger","Laura",25,2342324232L),
+    Data("Robert","Dickson",88,3218313131L),
+    Data("Daniel","Pedro",28,32323232L))
+    .toDS
+    .createOrReplaceTempView("USER_DATA")
 
 
 // Don't infer the schema manually, just follow the steps:
