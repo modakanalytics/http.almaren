@@ -151,59 +151,6 @@ almaren.builder
 
 ```
 
-### Example
-
-```scala
-import com.github.music.of.the.ainur.almaren.Almaren
-import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
-import org.apache.spark.sql.SaveMode
-
-val almaren = Almaren("App Name")
-
-  import spark.implicits._
-
-  val df = Seq(
-    ("John", "Smith", "London"),
-    ("David", "Jones", "India"),
-    ("Michael", "Johnson", "Indonesia"),
-    ("Chris", "Lee", "Brazil"),
-    ("Mike", "Brown", "Russia")
-  ).toDF("first_name", "last_name", "country")
-
-  df.createOrReplaceTempView("person_info")
-
-val schema = "`data` STRUCT<`age`: BIGINT, `country`: STRING, `full_name`: STRING, `salary`: BIGINT>"
-
-val df = almaren.builder
-   .sourceSql("""with cte as (select monotonically_increasing_id() as id,* from person_info)
-                 |SELECT concat('http://localhost:3000/fireshots/',first_name,last_name,'/',country) as __URL__,id as __ID__, to_json(struct(first_name,last_name,country)) as __DATA__ FROM cte""".stripMargin).alias("PERSON_DATA")
-    .http(method = "GET")
-    .deserializer("JSON","__BODY__",Some(schema))
-    .sql("select __ID__,data,__STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from __TABLE__")
-    .dsl(
-      """__ID__$__ID__:StringType
-        |elapsed_time$elapsed_time:LongType
-        |data.full_name$full_name:StringType
-        |data.country$country:StringType
-        |data.age$age:LongType
-        |data.salary$salary:DoubleType
-        |status_code$status_code:IntegerType""".stripMargin
-    )
-    .sql(
-      """select T.__ID__ as id ,
-         full_name ,
-         country
-         age,
-         salary,
-         status_code
-        from __TABLE__ T join PERSON_DATA P on T.__ID__ = P.__ID__""")
-    .batch
-
-df.show(false)
-
-```
-
 ## Request Handler
 
 You can overwrite the default _requestHandler_ closure to give any custom HTTP Request.
