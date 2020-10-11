@@ -101,8 +101,7 @@ Output:
 
 ## Special Columns
 
-### Input :
-#### Parameters
+### Input:
 
 | Parameters   | Mandatory | Description                                                                        |
 |--------------|-----------|------------------------------------------------------------------------------------|
@@ -112,7 +111,6 @@ Output:
 
 
 ### Output:
-#### Parameters
 
 | Parameters           | Description                                        |
 |----------------------|----------------------------------------------------|
