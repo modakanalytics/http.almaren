@@ -77,7 +77,7 @@ almaren.builder
 
 ```
 
-#### Example
+### Example
 
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
@@ -128,5 +128,27 @@ val df = almaren.builder
 
 df.show(false)
 
+```
+
+## Request Handler
+
+You can overwrite the default _requestHandler_ closure to give any custom HTTP Request.
+
+```scala
+
+val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String) => {
+    method.toUpperCase match {
+      case "GET" => session.get(url, params = headers)
+      case "DELETE" => session.delete(url, params = headers)
+      case "OPTIONS" => session.options(url, params = headers)
+      case "HEAD" => session.head(url, params = headers)
+      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol))
+      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol))
+      case method => throw new Exception(s"Invalid Method: $method")
+     }
+     
+almaren.builder
+    .sql("...")
+    .http(method = "POST", requestHandler = customHandler)
 ```
 
