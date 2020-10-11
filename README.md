@@ -12,6 +12,18 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 ## Input and Output
 
+_http_ parameters:
+
+| Parameter      | Description                     | Type                                                               |
+|----------------|---------------------------------|--------------------------------------------------------------------|
+| headers        | HTTP headers                    | Map[String,String]                                                 |
+| method         | HTTP Method                     | String                                                             |
+| requestHandler | Closure to handle HTTP request  | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions | () = requests.Session                                              |
+
+
+*HTTP Component* special _columns_: 
+
 ### Input :
 #### Parameters
 
@@ -35,6 +47,16 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 | \_\_ERROR\_\_        | Java Exception                                     |
 | \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
 
+## Methods
+
+The following methods are supported:
+
+- POST
+- GET
+- HEAD
+- OPTIONS
+- DELETE
+- PUT
 
 ## Session
 
