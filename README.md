@@ -1,7 +1,6 @@
 # HTTP Connector
 
-[![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
-
+[![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
 ```
 libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "0.0.1-2.4"
 ```
