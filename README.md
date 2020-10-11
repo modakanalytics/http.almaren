@@ -7,7 +7,7 @@ libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "0.0.
 ```
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.4.0-2.4,com.github.music-of-the-ainur:http-almaren_2.11:0.0.1-2.4"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.5.0-2.4,com.github.music-of-the-ainur:http-almaren_2.11:0.0.1-2.4"
 ```
 
 ## Input and Output
@@ -39,15 +39,19 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 ## Session
 
 You can give an existing [session](https://github.com/lihaoyi/requests-scala#sessions) to the HTTP component.
-
+To see all details check the [documentation](https://github.com/lihaoyi/requests-scala#sessions)
 
 
 ```scala
-val newSession = () => requests.Session(headers = Map("Authorization" -> "Basic QWxhZGRpbjpPcGVuU2VzYW1l"))
+val newSession = () => {
+    val s = requests.Session(headers = Map("Custom-header" -> "foo"))
+    s.post("https://bar.com/login",data = Map("user" -> "baz", "password" -> "123"))
+    s
+}
 
 almaren.builder
-    .sourceSql("SELECT concat('http://localhost:3000/fireshots/',first_name,last_name,'/',country) as __URL__,id as __ID__")
-    .http(method = methodType, session = newSession)
+    .sourceSql("SELECT concat('http://localhost:3000/user/',first_name,last_name,'/',country) as __URL__,id as __ID__")
+    .http(method = "GET", session = newSession)
 
 ```
 
