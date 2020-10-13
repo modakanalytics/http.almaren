@@ -7,6 +7,11 @@ import com.github.music.of.the.ainur.almaren.state.core.Main
 import requests.Session
 import scala.util.{Success,Failure,Try}
 import org.apache.spark.sql.Row
+import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import java.util.concurrent.Executors
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 
 private[almaren] final case class Result(
   `__ID__`:String,
@@ -28,20 +33,25 @@ object Alias {
 private[almaren] case class MainHTTP(
   headers:Map[String,String],
   method:String,
-  requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response,
-  session:() => requests.Session) extends Main {
+  requestHandler:(Row,Session,String,Map[String,String],String,Int) => requests.Response,
+  session:() => requests.Session,
+  timeout:Int,
+  threadPoolSize:Int) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
-    logger.info(s"headers:{$headers}, method:{$method}")
-
-    import df.sparkSession.implicits._
+    logger.info(s"headers:{$headers}, method:{$method}, timeout:{$timeout}, threadPoolSize:{$threadPoolSize}")
      
+    import df.sparkSession.implicits._
+
     val result = df.mapPartitions(partition => {
+      
+      implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
       val s = session()
-      partition.map(row => {
+
+      val data:Iterator[Future[Result]] = partition.map(row => Future[Result] {
         val url = row.getAs[Any](Alias.UrlCol).toString()
         val startTime = System.currentTimeMillis()
-        val response = Try(requestHandler(row,s,url,headers,method))
+        val response = Try(requestHandler(row,s,url,headers,method,timeout))
         val elapsedTime = System.currentTimeMillis() - startTime
         val id = row.getAs[Any](Alias.IdCol).toString()
         response match {
@@ -58,6 +68,8 @@ private[almaren] case class MainHTTP(
           }
         }
       })
+      val requests:Future[Iterator[Result]] = Future.sequence(data)
+      Await.result(requests,Duration.Inf).map(s => s)
     })
     result.toDF
   }
@@ -68,21 +80,23 @@ private[almaren] trait HTTPConnector extends Core {
   def http( 
     headers:Map[String,String] = Map(),
     method:String,
-    requestHandler:(Row,Session,String,Map[String,String],String) => requests.Response = HTTP.defaultHandler,
-    session:() => requests.Session = HTTP.defaultSession): Option[Tree] =
-    MainHTTP(headers,method,requestHandler,session)
+    requestHandler:(Row,Session,String,Map[String,String],String,Int) => requests.Response = HTTP.defaultHandler,
+    session:() => requests.Session = HTTP.defaultSession,
+    timeout:Int = 10,
+    threadPoolSize:Int = 1): Option[Tree] =
+    MainHTTP(headers,method,requestHandler,session,timeout = timeout, threadPoolSize = threadPoolSize)
   
 }
 
 object HTTP {
-  val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String) => {
+  val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String, timeout:Int) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = headers)
-      case "DELETE" => session.delete(url, params = headers)
-      case "OPTIONS" => session.options(url, params = headers)
-      case "HEAD" => session.head(url, params = headers)
-      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol))
-      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol))
+      case "GET" => session.get(url, params = headers, readTimeout = timeout)
+      case "DELETE" => session.delete(url, params = headers, readTimeout = timeout)
+      case "OPTIONS" => session.options(url, params = headers, readTimeout = timeout)
+      case "HEAD" => session.head(url, params = headers, readTimeout = timeout)
+      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout)
+      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout)
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
