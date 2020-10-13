@@ -82,7 +82,7 @@ private[almaren] trait HTTPConnector extends Core {
     method:String,
     requestHandler:(Row,Session,String,Map[String,String],String,Int) => requests.Response = HTTP.defaultHandler,
     session:() => requests.Session = HTTP.defaultSession,
-    timeout:Int = 10,
+    timeout:Int = 1000,
     threadPoolSize:Int = 1): Option[Tree] =
     MainHTTP(headers,method,requestHandler,session,timeout = timeout, threadPoolSize = threadPoolSize)
   
