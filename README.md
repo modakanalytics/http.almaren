@@ -97,7 +97,8 @@ Output:
 | method         | HTTP Method                     | String                                                             |
 | requestHandler | Closure to handle HTTP request  | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions | () = requests.Session                                              |
-
+| timeout        | HTTP Client timeout             | Int                                                                |
+| threadPoolSize | How many connection in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize                                |                                                                    |
 
 ## Special Columns
 
