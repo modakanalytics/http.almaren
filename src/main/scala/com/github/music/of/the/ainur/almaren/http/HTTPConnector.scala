@@ -12,6 +12,7 @@ import scala.concurrent.ExecutionContext
 import java.util.concurrent.Executors
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import scala.collection.mutable
 
 private[almaren] final case class Result(
   `__ID__`:String,
@@ -36,42 +37,46 @@ private[almaren] case class MainHTTP(
   requestHandler:(Row,Session,String,Map[String,String],String,Int) => requests.Response,
   session:() => requests.Session,
   timeout:Int,
-  threadPoolSize:Int) extends Main {
+  threadPoolSize:Int,
+  batchSize:Int) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers}, method:{$method}, timeout:{$timeout}, threadPoolSize:{$threadPoolSize}")
-     
-    import df.sparkSession.implicits._
+    
+      import df.sparkSession.implicits._
 
     val result = df.mapPartitions(partition => {
-      
-      implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-      val s = session()
 
-      val data:Iterator[Future[Result]] = partition.map(row => Future[Result] {
-        val url = row.getAs[Any](Alias.UrlCol).toString()
-        val startTime = System.currentTimeMillis()
-        val response = Try(requestHandler(row,s,url,headers,method,timeout))
-        val elapsedTime = System.currentTimeMillis() - startTime
-        val id = row.getAs[Any](Alias.IdCol).toString()
-        response match {
-          case Success(r) => Result(
-            id,
-            Some(r.text()),
-            r.headers,
-            Some(r.statusCode),
-            Some(r.statusMessage),
-            `__ELAPSED_TIME__` = elapsedTime)
-          case Failure(f) => {
-            logger.error("Almaren HTTP Request Error",f)
-            Result(id,`__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
-          }
-        }
+      implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
+      val data:Iterator[Future[Seq[Result]]] = partition.grouped(batchSize).map(rows => Future {
+        val s = session()
+        rows.map(row => request(row,s))
       })
-      val requests:Future[Iterator[Result]] = Future.sequence(data)
-      Await.result(requests,Duration.Inf).map(s => s)
+      val requests:Future[Iterator[Seq[Result]]] = Future.sequence(data)
+      Await.result(requests,Duration.Inf).flatMap(s => s)
     })
     result.toDF
+  }
+
+  private def request(row:Row,session:Session): Result = {
+    val url = row.getAs[Any](Alias.UrlCol).toString()
+    val startTime = System.currentTimeMillis()
+    val response = Try(requestHandler(row,session,url,headers,method,timeout))
+    val elapsedTime = System.currentTimeMillis() - startTime
+    val id = row.getAs[Any](Alias.IdCol).toString()
+    response match {
+      case Success(r) => Result(
+        id,
+        Some(r.text()),
+        r.headers,
+        Some(r.statusCode),
+        Some(r.statusMessage),
+        `__ELAPSED_TIME__` = elapsedTime)
+      case Failure(f) => {
+            logger.error("Almaren HTTP Request Error",f)
+              Result(id,`__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
+      }
+    }
   }
 }
 
@@ -83,15 +88,24 @@ private[almaren] trait HTTPConnector extends Core {
     requestHandler:(Row,Session,String,Map[String,String],String,Int) => requests.Response = HTTP.defaultHandler,
     session:() => requests.Session = HTTP.defaultSession,
     timeout:Int = 1000,
-    threadPoolSize:Int = 1): Option[Tree] =
-    MainHTTP(headers,method,requestHandler,session,timeout = timeout, threadPoolSize = threadPoolSize)
+    threadPoolSize:Int = 1,
+    batchSize:Int = 1000): Option[Tree] =
+    MainHTTP(
+      headers,
+      method,
+      requestHandler,
+      session,
+      timeout = timeout,
+      threadPoolSize = threadPoolSize,
+      batchSize = batchSize
+    )
   
 }
 
 object HTTP {
   val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String, timeout:Int) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = headers, readTimeout = timeout)
+      case "GET" => session.get(url, params = headers, readTimeout = timeout, connectTimeout = 1000000)
       case "DELETE" => session.delete(url, params = headers, readTimeout = timeout)
       case "OPTIONS" => session.options(url, params = headers, readTimeout = timeout)
       case "HEAD" => session.head(url, params = headers, readTimeout = timeout)
