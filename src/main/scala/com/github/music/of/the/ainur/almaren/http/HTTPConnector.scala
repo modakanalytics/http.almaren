@@ -105,12 +105,12 @@ private[almaren] trait HTTPConnector extends Core {
 object HTTP {
   val defaultHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String, timeout:Int) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = headers, readTimeout = timeout, connectTimeout = 1000000)
-      case "DELETE" => session.delete(url, params = headers, readTimeout = timeout)
-      case "OPTIONS" => session.options(url, params = headers, readTimeout = timeout)
-      case "HEAD" => session.head(url, params = headers, readTimeout = timeout)
-      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout)
-      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout)
+      case "GET" => session.get(url, params = headers, readTimeout = timeout, connectTimeout = timeout)
+      case "DELETE" => session.delete(url, params = headers, readTimeout = timeout, connectTimeout = timeout)
+      case "OPTIONS" => session.options(url, params = headers, readTimeout = timeout, connectTimeout = timeout)
+      case "HEAD" => session.head(url, params = headers, readTimeout = timeout, connectTimeout = timeout)
+      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout, connectTimeout = timeout)
+      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = timeout, connectTimeout = timeout)
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
