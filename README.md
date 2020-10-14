@@ -99,7 +99,7 @@ Output:
 | session        | Closure to handle HTTP sessions                                                                                        | () = requests.Session                                              |
 | timeout        | HTTP Client timeout                                                                                                    | Int                                                                |
 | threadPoolSize | How many connection in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
-| batchSize      | How many records a single thread wull process                                                                          | Int                                                                   |
+| batchSize      | How many records a single thread will process                                                                          | Int                                                                   |
 
 
 ## Special Columns
