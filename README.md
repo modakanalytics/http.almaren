@@ -43,7 +43,7 @@ val df = almaren.builder
                 concat('http://httpbin.org/anything/person/',code) as __URL__,
                 to_json(named_struct('data',named_struct('name',firstName + " " + lastName))) as __DATA__ 
             FROM DATA""")
-    .http(method = "POST")
+    .http(method = "POST", threadPoolSize = 10, batchSize = 10000)
     .deserializer("JSON","__BODY__",httpOutpustSchema)
     .sql("""SELECT
                 T.origin,
@@ -91,15 +91,16 @@ Output:
 
 ## Parameters
 
-| Parameter      | Description                                                                                                            | Type                                                               |
-|----------------|------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| headers        | HTTP headers                                                                                                           | Map[String,String]                                                 |
-| method         | HTTP Method                                                                                                            | String                                                             |
-| requestHandler | Closure to handle HTTP request                                                                                         | (Row,Session,String,Map[String,String],String) => requests.Respons |
-| session        | Closure to handle HTTP sessions                                                                                        | () = requests.Session                                              |
-| timeout        | HTTP Client timeout                                                                                                    | Int                                                                |
+| Parameter      | Description                                                                                                             | Type                                                               |
+|----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                                             | String                                                             |
+| requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                              | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                   | Int                                                                |
 | threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
-| batchSize      | How many records a single thread will process                                                                          | Int                                                                   |
+| batchSize      | How many records a single thread will process                                                                           | Int                                                                |
 
 
 ## Special Columns
@@ -161,16 +162,17 @@ You can overwrite the default _requestHandler_ closure to give any custom HTTP R
 
 ```scala
 
-val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String) => {
+val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String,connectTimeout:Int, readTimeout:Int) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = headers)
-      case "DELETE" => session.delete(url, params = headers)
-      case "OPTIONS" => session.options(url, params = headers)
-      case "HEAD" => session.head(url, params = headers)
-      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol))
-      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol))
+      case "GET" => session.get(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "DELETE" => session.delete(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "OPTIONS" => session.options(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "HEAD" => session.head(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
       case method => throw new Exception(s"Invalid Method: $method")
-     }
+    }
+}
      
 almaren.builder
     .sql("...")
