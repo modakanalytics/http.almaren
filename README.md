@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "0.1.0-2.4"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "0.1.1-2.4"
 ```
 
 ```
