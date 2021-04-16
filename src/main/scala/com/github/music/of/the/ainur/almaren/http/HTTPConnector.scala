@@ -13,13 +13,13 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 private[almaren] final case class Result(
-                                          `__ID__`: String,
-                                          `__BODY__`: Option[String] = None,
-                                          `__HEADER__`: Map[String, Seq[String]] = Map(),
-                                          `__STATUS_CODE__`: Option[Int] = None,
-                                          `__STATUS_MSG__`: Option[String] = None,
-                                          `__ERROR__`: Option[String] = None,
-                                          `__ELAPSED_TIME__`: Long
+  `__ID__`: String,
+  `__BODY__`: Option[String] = None,
+  `__HEADER__`: Map[String, Seq[String]] = Map(),
+  `__STATUS_CODE__`: Option[Int] = None,
+  `__STATUS_MSG__`: Option[String] = None,
+  `__ERROR__`: Option[String] = None,
+  `__ELAPSED_TIME__`: Long
                                         )
 
 object Alias {
@@ -30,15 +30,15 @@ object Alias {
 
 
 private[almaren] case class MainHTTP(
-                                      headers: Map[String, String],
-                                      params: Map[String, String],
-                                      method: String,
-                                      requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-                                      session: () => requests.Session,
-                                      connectTimeout: Int,
-                                      readTimeout: Int,
-                                      threadPoolSize: Int,
-                                      batchSize: Int) extends Main {
+  headers: Map[String, String],
+  params: Map[String, String],
+  method: String,
+  requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
+  session: () => requests.Session,
+  connectTimeout: Int,
+  readTimeout: Int,
+  threadPoolSize: Int,
+  batchSize: Int) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}")
@@ -47,21 +47,21 @@ private[almaren] case class MainHTTP(
 
     val result = df.mapPartitions(partition => {
 
-      implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-      val data: Iterator[Future[Seq[Result]]] = partition.grouped(batchSize).map(rows => Future {
+      implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
+      val data:Iterator[Future[Seq[Result]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
-        rows.map(row => request(row, s))
+        rows.map(row => request(row,s))
       })
-      val requests: Future[Iterator[Seq[Result]]] = Future.sequence(data)
-      Await.result(requests, Duration.Inf).flatMap(s => s)
+      val requests:Future[Iterator[Seq[Result]]] = Future.sequence(data)
+      Await.result(requests,Duration.Inf).flatMap(s => s)
     })
     result.toDF
   }
 
-  private def request(row: Row, session: Session): Result = {
+  private def request(row:Row, session:Session): Result = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
     val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row, session, url, headers,params, method, connectTimeout, readTimeout))
+    val response = Try(requestHandler(row,session,url,headers,params,method,connectTimeout,readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString()
     response match {
@@ -83,15 +83,15 @@ private[almaren] case class MainHTTP(
 private[almaren] trait HTTPConnector extends Core {
 
   def http(
-            headers: Map[String, String] = Map(),
-            params: Map[String, String] = Map(),
-            method: String,
-            requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTP.defaultHandler,
-            session: () => requests.Session = HTTP.defaultSession,
-            connectTimeout: Int = 60000,
-            readTimeout: Int = 1000,
-            threadPoolSize: Int = 1,
-            batchSize: Int = 5000): Option[Tree] =
+    headers: Map[String, String] = Map(),
+    params: Map[String, String] = Map(),
+    method: String,
+    requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTP.defaultHandler,
+    session: () => requests.Session = HTTP.defaultSession,
+    connectTimeout: Int = 60000,
+    readTimeout: Int = 1000,
+    threadPoolSize: Int = 1,
+    batchSize: Int = 5000): Option[Tree] =
     MainHTTP(
       headers,
       params,
@@ -107,7 +107,7 @@ private[almaren] trait HTTPConnector extends Core {
 }
 
 object HTTP {
-  val defaultHandler = (row: Row, session: Session, url: String, headers: Map[String, String], params: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
+  val defaultHandler = (row:Row, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
     method.toUpperCase match {
       case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
       case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
