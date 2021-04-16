@@ -61,7 +61,7 @@ private[almaren] case class MainHTTP(
   private def request(row: Row, session: Session): Result = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
     val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row, session, url, headers, method, connectTimeout, readTimeout))
+    val response = Try(requestHandler(row, session, url, headers,params, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString()
     response match {
