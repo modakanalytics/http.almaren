@@ -51,6 +51,7 @@ ThisBuild / organizationHomepage := Some(url("https://github.com/modakanalytics"
 
 
 // Remove all additional repository other than Maven Central from POM
+credentials += Credentials(Path.userHome / ".sbt" / "sonatype_credentials")
 ThisBuild / pomIncludeRepository := { _ => false }
 ThisBuild / publishTo := {
   val nexus = "https://oss.sonatype.org/"
