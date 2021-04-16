@@ -30,7 +30,7 @@ List(Data("Roger","Laura",25,2342324232L),
 
 
 // Don't infer the schema manually, just follow the steps:
-// val jsonColumn = spark.sql("SELECT JSON_STRING_COL FROM ...").as[String]
+// val jsonColumn = spark.sql("SELECT __BODY__ FROM ...").as[String]
 // To generate the schema: spark.read.json(jsonColumn).schema.toDDL
 
 val httpOutpustSchema = Some("`data` STRING,`headers` STRUCT<`Accept`: STRING, `Accept-Encoding`: STRING, `Cache-Control`: STRING, `Content-Length`: STRING, `Content-Type`: STRING, `Host`: STRING, `Pragma`: STRING, `User-Agent`: STRING, `X-Amzn-Trace-Id`: STRING>,`method` STRING,`origin` STRING,`url` STRING")
