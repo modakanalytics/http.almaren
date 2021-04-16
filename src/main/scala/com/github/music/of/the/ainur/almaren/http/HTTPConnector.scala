@@ -15,7 +15,7 @@ import scala.util.{Failure, Success, Try}
 private[almaren] final case class Result(
   `__ID__`:String,
   `__BODY__`:Option[String] = None,
-  `__HEADER__`:Map[String, Seq[String]] = Map(),
+  `__HEADER__`:Map[String,Seq[String]] = Map(),
   `__STATUS_CODE__`:Option[Int] = None,
   `__STATUS_MSG__`:Option[String] = None,
   `__ERROR__`:Option[String] = None,
