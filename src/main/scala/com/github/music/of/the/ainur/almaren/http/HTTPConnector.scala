@@ -12,7 +12,7 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-private[almaren] final case class Result(
+final case class Response(
   `__ID__`:String,
   `__BODY__`:Option[String] = None,
   `__HEADER__`:Map[String,Seq[String]] = Map(),
@@ -48,24 +48,24 @@ private[almaren] case class MainHTTP(
     val result = df.mapPartitions(partition => {
 
       implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-      val data:Iterator[Future[Seq[Result]]] = partition.grouped(batchSize).map(rows => Future {
+      val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
         rows.map(row => request(row,s))
       })
-      val requests:Future[Iterator[Seq[Result]]] = Future.sequence(data)
+      val requests:Future[Iterator[Seq[Response]]] = Future.sequence(data)
       Await.result(requests,Duration.Inf).flatMap(s => s)
     })
     result.toDF
   }
 
-  private def request(row:Row, session:Session): Result = {
+  private def request(row:Row, session:Session): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
     val startTime = System.currentTimeMillis()
     val response = Try(requestHandler(row,session,url,headers,params,method,connectTimeout,readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString()
     response match {
-      case Success(r) => Result(
+      case Success(r) => Response(
         id,
         Some(r.text()),
         r.headers,
@@ -74,7 +74,7 @@ private[almaren] case class MainHTTP(
         `__ELAPSED_TIME__` = elapsedTime)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Result(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
+        Response(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
       }
     }
   }
