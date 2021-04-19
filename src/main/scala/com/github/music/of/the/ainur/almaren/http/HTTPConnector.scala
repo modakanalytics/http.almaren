@@ -19,8 +19,8 @@ final case class Response(
   `__STATUS_CODE__`:Option[Int] = None,
   `__STATUS_MSG__`:Option[String] = None,
   `__ERROR__`:Option[String] = None,
-  `__ELAPSED_TIME__`:Long
-                                        )
+  `__ELAPSED_TIME__`:Long,
+   `__URL__`:String)
 
 object Alias {
   val DataCol = "__DATA__"
@@ -71,10 +71,11 @@ private[almaren] case class MainHTTP(
         r.headers,
         Some(r.statusCode),
         Some(r.statusMessage),
-        `__ELAPSED_TIME__` = elapsedTime)
+        `__ELAPSED_TIME__` = elapsedTime,
+        `__URL__` = url)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime)
+        Response(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
       }
     }
   }
