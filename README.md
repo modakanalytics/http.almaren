@@ -94,6 +94,7 @@ Output:
 | Parameter      | Description                                                                                                             | Type                                                               |
 |----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
+| params         | HTTP Params                                                                                                             | Map[String,String]                                                 |
 | method         | HTTP Method                                                                                                             | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
@@ -125,7 +126,7 @@ Output:
 | \_\_STATUS_MSG\_\_   | HTTP response message                              |
 | \_\_ERROR\_\_        | Java Exception                                     |
 | \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
-
+| \_\_URL\_\_          | Request URL                                |
 ## Methods
 
 The following methods are supported:
@@ -162,14 +163,14 @@ You can overwrite the default _requestHandler_ closure to give any custom HTTP R
 
 ```scala
 
-val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String,connectTimeout:Int, readTimeout:Int) => {
+val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], params:Map[String,String], method:String,connectTimeout:Int, readTimeout:Int) => {
     method.toUpperCase match {
-      case "GET" => session.get(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "DELETE" => session.delete(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "OPTIONS" => session.options(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "HEAD" => session.head(url, params = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "POST" => session.post(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "PUT" => session.put(url, params = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "OPTIONS" => session.options(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "HEAD" => session.head(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "POST" => session.post(url, headers = headers, params = params, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "PUT" => session.put(url, headers = headers, params = params, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
       case method => throw new Exception(s"Invalid Method: $method")
     }
 }
