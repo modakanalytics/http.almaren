@@ -1,14 +1,10 @@
 package com.github.music.of.the.ainur.almaren.http
 
-import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 
 import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
-import org.apache.spark.sql.expressions.UserDefinedFunction
-import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, Row}
 import requests.Session
 
