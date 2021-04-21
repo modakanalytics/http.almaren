@@ -63,7 +63,7 @@ private[almaren] case class MainHTTP(
   }
 
   private val urlEncodeing: UserDefinedFunction = udf((url:String) => {
-    URLEncoder.encode(url, StandardCharsets.UTF_8)
+    URLEncoder.encode(url, StandardCharsets.UTF_8.toString)
   })
 
   private def request(row:Row, session:Session): Response = {
