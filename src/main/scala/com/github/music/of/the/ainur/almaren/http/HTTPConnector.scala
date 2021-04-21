@@ -49,7 +49,7 @@ private[almaren] case class MainHTTP(
 
     import df.sparkSession.implicits._
 
-    val result = df.withColumn("""`__URL__`""",urlEncodeing('__URL__)).mapPartitions(partition => {
+    val result = df.mapPartitions(partition => {
 
       implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
       val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
@@ -61,10 +61,6 @@ private[almaren] case class MainHTTP(
     })
     result.toDF
   }
-
-  private val urlEncodeing: UserDefinedFunction = udf((url:String) => {
-    URLEncoder.encode(url, StandardCharsets.UTF_8.toString)
-  })
 
   private def request(row:Row, session:Session): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
