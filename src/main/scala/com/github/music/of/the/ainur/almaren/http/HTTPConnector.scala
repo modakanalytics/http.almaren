@@ -1,10 +1,14 @@
 package com.github.music.of.the.ainur.almaren.http
 
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 import java.util.concurrent.Executors
 
 import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
+import org.apache.spark.sql.expressions.UserDefinedFunction
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.{DataFrame, Row}
 import requests.Session
 
@@ -45,7 +49,7 @@ private[almaren] case class MainHTTP(
 
     import df.sparkSession.implicits._
 
-    val result = df.mapPartitions(partition => {
+    val result = df.withColumn("""`__URL__`""",urlEncodeing('__URL__)).mapPartitions(partition => {
 
       implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
       val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
@@ -57,6 +61,10 @@ private[almaren] case class MainHTTP(
     })
     result.toDF
   }
+
+  private val urlEncodeing: UserDefinedFunction = udf((url:String) => {
+    URLEncoder.encode(url, StandardCharsets.UTF_8)
+  })
 
   private def request(row:Row, session:Session): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
