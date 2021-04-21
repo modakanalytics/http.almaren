@@ -180,3 +180,18 @@ almaren.builder
     .http(method = "POST", requestHandler = customHandler)
 ```
 
+## URL Encode UDF
+
+For URLEncoding a URL in the dataframe we can create a UDF and use it within dataframe if need in below steps.
+
+Note : df is a dataframe which conists of `__URL__` Field in it's Schema.
+
+```scala
+
+val urlEncodeing: UserDefinedFunction = udf((url:String) => {
+    URLEncoder.encode(url, StandardCharsets.UTF_8.toString)
+  })
+
+df.withColumn("""`__URL__`""",urlEncodeing('__URL__))
+
+```
