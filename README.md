@@ -125,6 +125,7 @@ Output:
 | \_\_STATUS_MSG\_\_   | HTTP response message                              |
 | \_\_ERROR\_\_        | Java Exception                                     |
 | \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
+| \_\_URL\_\_          | Url of the HTTP request performed                  |
 
 ## Methods
 
