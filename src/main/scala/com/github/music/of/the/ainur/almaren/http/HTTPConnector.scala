@@ -91,17 +91,18 @@ private[almaren] case class MainHTTPBatch(
   connectTimeout: Int,
   readTimeout: Int,
   batchSize: Int,
-  batchDelimiter: String) extends Main {
+  batchDelimiter: (Seq[Row]) => String
+) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
-    logger.info(s"url:${url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}, batchDelimiter:{$batchDelimiter}")
+    logger.info(s"url:${url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
 
     import df.sparkSession.implicits._
 
     val result = df.mapPartitions(partition => {
       partition.grouped(batchSize).map(rows => {
         val s = session()
-        val data = rows.map(row => row.getAs[String](Alias.DataCol)).mkString(batchDelimiter)
+        val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
         val response = request(data,s)
         val elapsedTime = System.currentTimeMillis() - startTime
@@ -167,7 +168,7 @@ private[almaren] trait HTTPConnector extends Core {
     connectTimeout: Int = 60000,
     readTimeout: Int = 1000,
     batchSize: Int = 5000,
-    batchDelimiter: String = "\\n"
+    batchDelimiter: (Seq[Row]) => String = HTTPBatch.defaultBatchDelimiter
   ): Option[Tree] =
     MainHTTPBatch(
       url,
@@ -214,6 +215,8 @@ object HTTPBatch {
       case method => throw new Exception(s"Invalid Method: $method")
     }
   }
+
+  val defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\\n")
 
   val defaultSession = () => requests.Session()
 
