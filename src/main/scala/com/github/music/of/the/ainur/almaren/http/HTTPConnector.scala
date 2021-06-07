@@ -216,7 +216,7 @@ object HTTPBatch {
     }
   }
 
-  val defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\\n")
+  val defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 
   val defaultSession = () => requests.Session()
 
