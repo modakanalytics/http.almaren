@@ -104,33 +104,36 @@ private[almaren] case class HTTPBatch(
         val s = session()
         val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
-        val response = request(data,s)
-        val elapsedTime = System.currentTimeMillis() - startTime
-         rows.map(row => response.copy(`__ID__` = row.getAs[Any](Alias.IdCol).toString()))
+        Try{request(data,s)} match {
+          case Success(r) => rows.map(row =>
+            Response(
+              row.getAs[Any](Alias.IdCol).toString(),
+              Some(r.text()),
+              r.headers,
+              Some(r.statusCode),
+              Some(r.statusMessage),
+              `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+              `__URL__` = url)
+          )
+          case Failure(f) => {
+            logger.error("Almaren HTTP Request Error", f)
+            rows.map(row => 
+              Response(
+                row.getAs[Any](Alias.IdCol).toString(),
+                `__ERROR__` = Some(f.getMessage()),
+                `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+                `__URL__` = url)
+            )
+          }
+        }
       })
     })
     result.toDF
   }
 
-  private def request(data:String, session:Session): Response = {
-    val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(data,session,url,headers,params,method,connectTimeout,readTimeout))
-    val elapsedTime = System.currentTimeMillis() - startTime
-    response match {
-      case Success(r) => Response(
-        "",
-        Some(r.text()),
-        r.headers,
-        Some(r.statusCode),
-        Some(r.statusMessage),
-        `__ELAPSED_TIME__` = elapsedTime,
-        `__URL__` = url)
-      case Failure(f) => {
-        logger.error("Almaren HTTP Request Error", f)
-        Response("", `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
-      }
-    }
-  }
+  private def request(data:String, session:Session): requests.Response = 
+    requestHandler(data,session,url,headers,params,method,connectTimeout,readTimeout)
+
 
 }
 
