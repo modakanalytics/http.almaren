@@ -100,13 +100,13 @@ private[almaren] case class MainHTTPBatch(
     import df.sparkSession.implicits._
 
     val result = df.mapPartitions(partition => {
-      partition.grouped(batchSize).map(rows => {
+      partition.grouped(batchSize).flatMap(rows => {
         val s = session()
         val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
         val response = request(data,s)
         val elapsedTime = System.currentTimeMillis() - startTime
-          rows.map(row => response.copy(`__ID__` = row.getAs[Any](Alias.IdCol).toString()))
+         rows.map(row => response.copy(`__ID__` = row.getAs[Any](Alias.IdCol).toString()))
       })
     })
     result.toDF
