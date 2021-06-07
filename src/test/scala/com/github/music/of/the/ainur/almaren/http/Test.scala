@@ -6,6 +6,7 @@ import org.apache.spark.sql.functions._
 import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
+import org.apache.spark.sql.Row
 
 class Test extends FunSuite with BeforeAndAfter {
   val almaren = Almaren("http-almaren")
@@ -19,6 +20,9 @@ class Test extends FunSuite with BeforeAndAfter {
   spark.sparkContext.setLogLevel("ERROR")
 
 
+  import org.apache.log4j.{Level, Logger}
+  Logger.getLogger("com.github.music.of.the.ainur.almaren").setLevel(Level.INFO)
+
   import spark.implicits._
 
   val df = Seq(
@@ -27,7 +31,17 @@ class Test extends FunSuite with BeforeAndAfter {
     ("Michael", "Johnson", "Indonesia"),
     ("Chris", "Lee", "Brazil"),
     ("Mike", "Brown", "Russia")
-  ).toDF("first_name", "last_name", "country")
+  ).toDF("first_name", "last_name", "country").coalesce(1)
+
+  almaren.builder
+    .sourceDataFrame(df)
+    .sqlExpr("to_json(struct(*)) as __DATA__","monotonically_increasing_id() as __ID__")
+    .httpBatch(
+      url = "http://127.0.0.1:3000/batchAPI",
+      method = "POST",
+      batchSize = 3,
+      batchDelimiter = (rows:Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+    .batch.show()
 
   df.createOrReplaceTempView("person_info")
 
@@ -54,6 +68,7 @@ class Test extends FunSuite with BeforeAndAfter {
   test(getSessionDf, getHttpDf(queryGet, "GET", true), "GET with Session")
   test(getDf, getHttpDf(queryGet, "GET", false), "GET without Session")
 
+   
   def getHttpDf(query: String, methodType: String, isSession: Boolean): DataFrame = {
 
     val tempDf = if (isSession) {

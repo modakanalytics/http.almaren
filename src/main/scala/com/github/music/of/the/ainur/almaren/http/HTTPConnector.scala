@@ -29,7 +29,7 @@ object Alias {
 }
 
 
-private[almaren] case class MainHTTP(
+private[almaren] case class HTTP(
   headers: Map[String, String],
   params: Map[String, String],
   method: String,
@@ -81,7 +81,7 @@ private[almaren] case class MainHTTP(
   }
 }
 
-private[almaren] case class MainHTTPBatch(
+private[almaren] case class HTTPBatch(
   url: String,
   headers: Map[String, String],
   params: Map[String, String],
@@ -95,7 +95,7 @@ private[almaren] case class MainHTTPBatch(
 ) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
-    logger.info(s"url:${url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
+    logger.info(s"url:{$url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
 
     import df.sparkSession.implicits._
 
@@ -146,7 +146,7 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
     batchSize: Int = 5000): Option[Tree] =
-    MainHTTP(
+    HTTP(
       headers,
       params,
       method,
@@ -163,14 +163,14 @@ private[almaren] trait HTTPConnector extends Core {
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
     method: String,
-    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPBatch.defaultHandler,
+    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTP.defaultHandlerBatch,
     session: () => requests.Session = HTTP.defaultSession,
     connectTimeout: Int = 60000,
     readTimeout: Int = 1000,
     batchSize: Int = 5000,
-    batchDelimiter: (Seq[Row]) => String = HTTPBatch.defaultBatchDelimiter
+    batchDelimiter: (Seq[Row]) => String = HTTP.defaultBatchDelimiter
   ): Option[Tree] =
-    MainHTTPBatch(
+    HTTPBatch(
       url,
       headers,
       params,
@@ -197,14 +197,7 @@ object HTTP {
     }
   }
 
-  val defaultSession = () => requests.Session()
-
-  implicit class HTTPImplicit(val container: Option[Tree]) extends HTTPConnector
-
-}
-
-object HTTPBatch {
-  val defaultHandler = (data:String, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
+  val defaultHandlerBatch = (data:String, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
     method.toUpperCase match {
       case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
       case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
@@ -220,6 +213,5 @@ object HTTPBatch {
 
   val defaultSession = () => requests.Session()
 
-  implicit class HTTPBatchImplicit(val container: Option[Tree]) extends HTTPConnector
-
+  implicit class HTTPImplicit(val container: Option[Tree]) extends HTTPConnector
 }
