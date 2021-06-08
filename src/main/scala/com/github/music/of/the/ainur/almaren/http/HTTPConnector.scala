@@ -22,6 +22,17 @@ final case class Response(
   `__ELAPSED_TIME__`:Long,
    `__URL__`:String)
 
+final case class ResponseBatch(
+  `__ID__`:Seq[String],
+  `__BODY__`:Option[String] = None,
+  `__HEADER__`:Map[String,Seq[String]] = Map(),
+  `__STATUS_CODE__`:Option[Int] = None,
+  `__STATUS_MSG__`:Option[String] = None,
+  `__ERROR__`:Option[String] = None,
+  `__ELAPSED_TIME__`:Long,
+   `__URL__`:String)
+
+
 object Alias {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
@@ -100,30 +111,29 @@ private[almaren] case class HTTPBatch(
     import df.sparkSession.implicits._
 
     val result = df.mapPartitions(partition => {
-      partition.grouped(batchSize).flatMap(rows => {
+      partition.grouped(batchSize).map(rows => {
         val s = session()
         val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
         Try{request(data,s)} match {
-          case Success(r) => rows.map(row =>
-            Response(
-              row.getAs[Any](Alias.IdCol).toString(),
-              Some(r.text()),
-              r.headers,
-              Some(r.statusCode),
-              Some(r.statusMessage),
-              `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-              `__URL__` = url)
+          case Success(r) => ResponseBatch(
+            rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
+            Some(r.text()),
+            r.headers,
+            Some(r.statusCode),
+            Some(r.statusMessage),
+            `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+            `__URL__` = url
           )
           case Failure(f) => {
             logger.error("Almaren HTTP Request Error", f)
-            rows.map(row => 
-              Response(
-                row.getAs[Any](Alias.IdCol).toString(),
-                `__ERROR__` = Some(f.getMessage()),
-                `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-                `__URL__` = url)
+            ResponseBatch(
+              rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
+              `__ERROR__` = Some(f.getMessage()),
+              `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+              `__URL__` = url
             )
+            
           }
         }
       })
