@@ -97,7 +97,7 @@ Output:
 | Parameter      | Description                                                                                                             | Type                                                               |
 |----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
-| params        | HTTP params                                                                                                            | Map[String,String]                                                  |
+| params         | HTTP params                                                                                                             | Map[String,String]                                                 |
 | method         | HTTP Method                                                                                                             | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
@@ -185,6 +185,17 @@ almaren.builder
 
 ### HTTP Batch
 
+Is used to perform a single HTTP request with a batch of data. You can choose how to create the batch data using the `batchDelimiter` closure. 
+The default behavior is to concatenate by new line.
+
+```
+$ curl -X PUT -H "Authorization: {SESSION_ID}" \
+-H "Content-Type: text/csv" \
+-H "Accept: text/csv" \
+--data-binary @"filename" \
+https://localhost/objects/documents/batch
+```
+
 #### Example 
 
 ```scala
@@ -224,42 +235,41 @@ monotonically_increasing_id() as __ID__}
 
 #### Parameters
 
-| Parameter      | Description                                                                                                             | Type                                                               |
-|----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| url           | Used to perform the HTTP request                                                                                                             |String                                               |
-| headers       | HTTP headers                                                                                                            | Map[String,String]                                                 |
-| params        | HTTP params                                                                                                            | Map[String,String]                                                 |
-| method         | HTTP Method                                                                                                             | String                                                             |
-| requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
-| session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
-| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                              | Int                                                                |
-| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                   | Int                                                                |
-| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
-| batchSize      | How many records a single thread will process                                                                           | Int                                                                |
-| batchDelimiter | Delimiter for the batch to be sent as payload to the request                                                                          | (Seq[Row]) => String                                                              |
+| Parameter      | Description                                                                                | Type                                                               |
+|----------------|--------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| url            | Used to perform the HTTP request                                                           | String                                                             |
+| headers        | HTTP headers                                                                               | Map[String,String]                                                 |
+| params         | HTTP params                                                                                | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                | String                                                             |
+| requestHandler | Closure to handle HTTP request                                                             | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions                                                            | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                      | Int                                                                |
+| batchSize      | Number of records sent in a single HTTP transaction                                        | Int                                                                |
+| batchDelimiter | Closure that you can define how the file will be delimited for the batch                   | (Seq[Row]) => String                                               |
 
 
 #### Special Columns
 
 ##### Input:
 
-| Parameters   | Mandatory | Description                                                                        |
-|--------------|-----------|------------------------------------------------------------------------------------|
+| Parameters   | Mandatory | Description                                                                                                |
+|--------------|-----------|------------------------------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component which is array[string] , it's useful to join data |
-| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
+| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests                                |
 
 
 ##### Output:
 
-| Parameters           | Description                                        |
-|----------------------|----------------------------------------------------|
+| Parameters           | Description                                                                       |
+|----------------------|-----------------------------------------------------------------------------------|
 | \_\_ID\_\_           | Custom ID , This field will be useful to join data which is of type array[string] |
-| \_\_BODY\_\_         | HTTP response                                      |
-| \_\_HEADER\_\_       | HTTP header                                        |
-| \_\_STATUS_CODE\_\_  | HTTP response code                                 |
-| \_\_STATUS_MSG\_\_   | HTTP response message                              |
-| \_\_ERROR\_\_        | Java Exception                                     |
-| \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
+| \_\_BODY\_\_         | HTTP response                                                                     |
+| \_\_HEADER\_\_       | HTTP header                                                                       |
+| \_\_STATUS_CODE\_\_  | HTTP response code                                                                |
+| \_\_STATUS_MSG\_\_   | HTTP response message                                                             |
+| \_\_ERROR\_\_        | Java Exception                                                                    |
+| \_\_ELAPSED_TIME\_\_ | Request time in ms                                                                |
 
 #### Methods
 
@@ -274,7 +284,7 @@ The following methods are supported:
 
 #### Request Handler Batch
 
-You can overwrite the default _requestHandlerBatch_ closure to give any custom HTTP Request.
+You can overwrite the default `_requestHandlerBatch_` closure to give any custom HTTP Request.
 
 ```scala
 
@@ -297,18 +307,26 @@ almaren.builder
 
 ##### Batch Delimiter
 
-Default batch Delimiter will be "\n" 
+Is a closure used to determine how the batch data will be created. The default behavior is to concatenate by new line.
+Example, if your `__DATA__` column has string by row. It will create a batch where the number of lines is defined by the `batchSize` parameter:
 
-You can specify the custom batch delimiter . Below is the example where batch delimiter is ","
+```
+foo
+bar
+baz
+...
+```
+
+##### Examples 
+
+If the `__DATA__` column is a JSON string `{foo:"bar"}` where you need to convert to an array of JSON `[{foo:"bar"},{foo:"baz"}}`:
 
 ```scala
-  val httpBatchDf = almaren.builder
-    .sourceDataFrame(df)
-    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
-    .httpBatch(
-      url = "http://127.0.0.1:3000/batchAPI",
-      method = "POST",
-      batchSize = 3,
-      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
-    .batch
+batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+```
+
+How to concatenate by new line:
+
+```scala
+defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 ```
