@@ -8,6 +8,29 @@ libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.0.
 ```
 spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.9.0-2.4,com.github.music-of-the-ainur:http-almaren_2.11:1.0.1-2.4"
 ```
+## Table of Contents
+
+- [Methods](#methods)
+  * [HTTP](#http)
+    + [Example](#example)
+    + [Parameters](#parameters)
+    + [Special Columns](#special-columns)
+      - [Input:](#input-)
+      - [Output:](#output-)
+    + [Methods](#methods-1)
+    + [Session](#session)
+    + [Request Handler](#request-handler)
+  * [HTTP Batch](#http-batch)
+    + [Example](#example-1)
+    + [Parameters](#parameters-1)
+    + [Special Columns](#special-columns-1)
+      - [Input:](#input--1)
+      - [Output:](#output--1)
+    + [Methods](#methods-2)
+    + [Request Handler Batch](#request-handler-batch)
+      - [Batch Delimiter](#batch-delimiter)
+      - [Examples](#examples)
+
 ## Methods
 
 ### HTTP
