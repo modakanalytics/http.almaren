@@ -246,7 +246,7 @@ monotonically_increasing_id() as __ID__}
 | connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high | Int                                                                |
 | readTimeout    | Maximum number of ms to perform a single HTTP request                                      | Int                                                                |
 | batchSize      | Number of records sent in a single HTTP transaction                                        | Int                                                                |
-| batchDelimiter | Closure that you can define how the file will be delimited for the batch                   | (Seq[Row]) => String                                               |
+| batchDelimiter | Closure used to determine how the batch data will be created                               | (Seq[Row]) => String                                               |
 
 
 #### Special Columns
