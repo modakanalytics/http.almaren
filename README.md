@@ -322,11 +322,11 @@ baz
 If the `__DATA__` column is a JSON string `{foo:"bar"}` where you need to convert to an array of JSON `[{foo:"bar"},{foo:"baz"}}`:
 
 ```scala
-batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+(rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
 ```
 
 How to concatenate by new line:
 
 ```scala
-defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
+(rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 ```
