@@ -113,7 +113,7 @@ Output:
 
 | Parameters   | Mandatory | Description                                                                        |
 |--------------|-----------|------------------------------------------------------------------------------------|
-| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data  |
+| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
 | \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
 | \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
 
@@ -122,7 +122,7 @@ Output:
 
 | Parameters           | Description                                        |
 |----------------------|----------------------------------------------------|
-| \_\_ID\_\_       |  This field will be in response of http.almaren component, it's useful to join data |
+| \_\_ID\_\_       | Custom ID , This field will be useful to join data |
 | \_\_BODY\_\_         | HTTP response                                      |
 | \_\_HEADER\_\_       | HTTP header                                        |
 | \_\_STATUS_CODE\_\_  | HTTP response code                                 |
