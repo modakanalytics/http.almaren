@@ -17,7 +17,7 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
+import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 
 import spark.implicits._
 
@@ -190,7 +190,7 @@ almaren.builder
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
+import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 
 import spark.implicits._
 
@@ -245,7 +245,7 @@ monotonically_increasing_id() as __ID__}
 
 | Parameters   | Mandatory | Description                                                                        |
 |--------------|-----------|------------------------------------------------------------------------------------|
-| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
+| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component which is array[string] , it's useful to join data |
 | \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
 
 
@@ -253,10 +253,62 @@ monotonically_increasing_id() as __ID__}
 
 | Parameters           | Description                                        |
 |----------------------|----------------------------------------------------|
-| \_\_ID\_\_           | Custom ID , This field will be useful to join data |
+| \_\_ID\_\_           | Custom ID , This field will be useful to join data which is of type array[string] |
 | \_\_BODY\_\_         | HTTP response                                      |
 | \_\_HEADER\_\_       | HTTP header                                        |
 | \_\_STATUS_CODE\_\_  | HTTP response code                                 |
 | \_\_STATUS_MSG\_\_   | HTTP response message                              |
 | \_\_ERROR\_\_        | Java Exception                                     |
 | \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
+
+#### Methods
+
+The following methods are supported:
+
+- POST
+- GET
+- HEAD
+- OPTIONS
+- DELETE
+- PUT
+
+#### Request Handler Batch
+
+You can overwrite the default _requestHandlerBatch_ closure to give any custom HTTP Request.
+
+```scala
+
+  val customHandlerBatch = (data:String, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
+    method.toUpperCase match {
+      case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "OPTIONS" => session.options(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "HEAD" => session.head(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "POST" => session.post(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case "PUT" => session.put(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
+      case method => throw new Exception(s"Invalid Method: $method")
+    }
+  }
+     
+almaren.builder
+    .sql("...")
+    .httpBatch(method = "POST", requestHandler = customHandlerBatch)
+```
+
+##### Batch Delimiter
+
+Default batch Delimiter will be "\n" 
+
+You can specify the custom batch delimiter . Below is the example where batch delimiter is ","
+
+```scala
+  val httpBatchDf = almaren.builder
+    .sourceDataFrame(df)
+    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+    .httpBatch(
+      url = "http://127.0.0.1:3000/batchAPI",
+      method = "POST",
+      batchSize = 3,
+      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+    .batch
+```
