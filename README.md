@@ -37,6 +37,15 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 It will perform a HTTP request for each `Row`.
 
+```
+$ curl -X PUT -H "Authorization: {SESSION_ID}" \
+-H "Content-Type: application/x-www-form-urlencoded" \
+-d "language=English" \
+-d "product=32131314" \
+-d "audience_=consumer_vr" \
+https://localhost/objects/documents/534
+```
+
 #### Example
 
 ```scala
