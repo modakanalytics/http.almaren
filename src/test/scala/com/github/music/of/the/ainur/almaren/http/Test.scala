@@ -33,16 +33,6 @@ class Test extends FunSuite with BeforeAndAfter {
     ("Mike", "Brown", "Russia")
   ).toDF("first_name", "last_name", "country").coalesce(1)
 
-  almaren.builder
-    .sourceDataFrame(df)
-    .sqlExpr("to_json(struct(*)) as __DATA__","monotonically_increasing_id() as __ID__")
-    .httpBatch(
-      url = "http://127.0.0.1:3000/batchAPI",
-      method = "POST",
-      batchSize = 3,
-      batchDelimiter = (rows:Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
-    .batch.show()
-
   df.createOrReplaceTempView("person_info")
 
   val newSession = () => requests.Session(headers = Map("Authorization" -> "Basic QWxhZGRpbjpPcGVuU2VzYW1l"))
@@ -105,6 +95,30 @@ class Test extends FunSuite with BeforeAndAfter {
       .batch
   }
 
+  val httpBatchDf = almaren.builder
+    .sourceDataFrame(df)
+    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+    .httpBatch(
+      url = "http://127.0.0.1:3000/batchAPI",
+      method = "POST",
+      batchSize = 3,
+      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+    .deserializer("JSON", "__BODY__", Some("`data` ARRAY<STRUCT<`country`: STRING, `first_name`: STRING, `last_name`: STRING>>"))
+    .sql("select   explode(arrays_zip(__ID__, data)) as vars , __STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from __TABLE__")
+    .sql("select vars.__ID__ as __ID__ ,vars.data as data ,status_code, elapsed_time from __TABLE__ ")
+    .dsl(
+      """__ID__$__ID__:StringType
+        |data.country$country:StringType
+        |data.first_name$first_name:StringType
+        |data.last_name$last_name:StringType
+        |status_code$status_code:IntegerType
+        |elapsed_time$elapsed_time:LongType""".stripMargin)
+    .sql("select __TABLE__.__ID__ as id ,first_name,last_name,country,status_code  from __TABLE__ inner join BATCH_DATA on __TABLE__.__ID__ = BATCH_DATA.__ID__ ")
+    .batch
+
+  val getBatchDf = spark.read.parquet("src/test/resources/data/httpBatch.parquet")
+
+  test(getBatchDf, httpBatchDf, "test for httpBatch method")
 
   // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {

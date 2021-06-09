@@ -97,6 +97,7 @@ Output:
 | Parameter      | Description                                                                                                             | Type                                                               |
 |----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
+| params        | HTTP params                                                                                                            | Map[String,String]                                                  |
 | method         | HTTP Method                                                                                                             | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
@@ -183,3 +184,79 @@ almaren.builder
 ```
 
 ### HTTP Batch
+
+#### Example 
+
+```scala
+import com.github.music.of.the.ainur.almaren.Almaren
+import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
+import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
+
+import spark.implicits._
+
+  val httpBatchDf = almaren.builder
+    .sourceDataFrame(df)
+    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+    .httpBatch(
+      url = "http://127.0.0.1:3000/batchAPI",
+      method = "POST",
+      batchSize = 3,
+      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+    .batch
+
+httpBatchDf.show(false)
+```
+
+Output:
+```
+21/06/09 17:52:20 INFO SourceDataFrame:
+21/06/09 17:52:20 INFO SqlExpr: exprs:{to_json(struct(*)) as __DATA__
+monotonically_increasing_id() as __ID__}
+21/06/09 17:52:20 INFO Alias: {BATCH_DATA}
+21/06/09 17:52:20 INFO HTTPBatch: url:{http://127.0.0.1:3000/batchAPI}, headers:{Map()},params:{Map()}, method:{POST}, connectTimeout:{60000}, readTimeout{1000}, batchSize:{3}com.github.music.of.the.ainur.almaren.http.Test 93s
++---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+------------------------------+
+|__ID__   |__BODY__                                                                                                                                                                                                 |__HEADER__                                                                                                                                          |__STATUS_CODE__|__STATUS_MSG__|__ERROR__|__ELAPSED_TIME__|__URL__                       |
++---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+------------------------------+
+|[0, 1, 2]|{"data":[{"country":"London","first_name":"John","last_name":"Smith"},{"country":"India","first_name":"David","last_name":"Jones"},{"country":"Indonesia","first_name":"Michael","last_name":"Johnson"}]}|[date -> [Wed, 09 Jun 2021 12:22:23 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [201]]|200            |OK            |null     |122             |http://127.0.0.1:3000/batchAPI|
+|[3, 4]   |{"data":[{"country":"Brazil","first_name":"Chris","last_name":"Lee"},{"country":"Russia","first_name":"Mike","last_name":"Brown"}]}                                                                      |[date -> [Wed, 09 Jun 2021 12:22:23 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [131]]|200            |OK            |null     |171             |http://127.0.0.1:3000/batchAPI|
++---------+---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+----------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+------------------------------+```
+``` 
+
+#### Parameters
+
+| Parameter      | Description                                                                                                             | Type                                                               |
+|----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| url           | Used to perform the HTTP request                                                                                                             |String                                               |
+| headers       | HTTP headers                                                                                                            | Map[String,String]                                                 |
+| params        | HTTP params                                                                                                            | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                                             | String                                                             |
+| requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                              | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                   | Int                                                                |
+| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
+| batchSize      | How many records a single thread will process                                                                           | Int                                                                |
+| batchDelimiter | Delimiter for the batch to be sent as payload to the request                                                                          | (Seq[Row]) => String                                                              |
+
+
+#### Special Columns
+
+##### Input:
+
+| Parameters   | Mandatory | Description                                                                        |
+|--------------|-----------|------------------------------------------------------------------------------------|
+| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
+| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST Method HTTP requests        |
+
+
+##### Output:
+
+| Parameters           | Description                                        |
+|----------------------|----------------------------------------------------|
+| \_\_ID\_\_           | Custom ID , This field will be useful to join data |
+| \_\_BODY\_\_         | HTTP response                                      |
+| \_\_HEADER\_\_       | HTTP header                                        |
+| \_\_STATUS_CODE\_\_  | HTTP response code                                 |
+| \_\_STATUS_MSG\_\_   | HTTP response message                              |
+| \_\_ERROR\_\_        | Java Exception                                     |
+| \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |

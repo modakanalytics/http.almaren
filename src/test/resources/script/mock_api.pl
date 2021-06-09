@@ -23,7 +23,8 @@ my $payload = { data => { age => 25, salary => 25000 } };
     
     post '/batchAPI' => sub ($c) {
         my $foo = parse_json $c->req->body;
-        $c->render(json => $foo);
+        my $payload2 -> {data} = $foo;
+        $c->render(json => $payload2);
     };
 }
 app->start;
