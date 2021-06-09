@@ -153,8 +153,8 @@ private[almaren] trait HTTPConnector extends Core {
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
     method: String,
-    requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTP.defaultHandler,
-    session: () => requests.Session = HTTP.defaultSession,
+    requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandler,
+    session: () => requests.Session = HTTPConn.defaultSession,
     connectTimeout: Int = 60000,
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
@@ -176,12 +176,12 @@ private[almaren] trait HTTPConnector extends Core {
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
     method: String,
-    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTP.defaultHandlerBatch,
-    session: () => requests.Session = HTTP.defaultSession,
+    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandlerBatch,
+    session: () => requests.Session = HTTPConn.defaultSession,
     connectTimeout: Int = 60000,
     readTimeout: Int = 1000,
     batchSize: Int = 5000,
-    batchDelimiter: (Seq[Row]) => String = HTTP.defaultBatchDelimiter
+    batchDelimiter: (Seq[Row]) => String = HTTPConn.defaultBatchDelimiter
   ): Option[Tree] =
     HTTPBatch(
       url,
@@ -197,7 +197,7 @@ private[almaren] trait HTTPConnector extends Core {
     )
 }
 
-object HTTP {
+object HTTPConn {
   val defaultHandler = (row:Row, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
     method.toUpperCase match {
       case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
