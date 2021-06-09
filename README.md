@@ -12,6 +12,8 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
 
 ### HTTP
 
+It will perform a HTTP request for each `Row`.
+
 #### Example
 
 ```scala
