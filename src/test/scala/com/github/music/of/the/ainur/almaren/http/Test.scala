@@ -64,7 +64,7 @@ class Test extends FunSuite with BeforeAndAfter {
     val tempDf = if (isSession) {
       almaren.builder
         .sourceSql(query).alias("PERSON_DATA")
-        .http(method = methodType, session = newSession)
+        .http(params = Map("username" -> "sample"),hiddenParams = Map("username" -> "sample","password" -> "sample"),method = methodType, session = newSession)
     }
     else {
       almaren.builder
@@ -100,6 +100,8 @@ class Test extends FunSuite with BeforeAndAfter {
     .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
     .httpBatch(
       url = "http://127.0.0.1:3000/batchAPI",
+      params = Map("username" -> "sample"),
+      hiddenParams = Map("username" -> "sample","password" -> "sample"),
       method = "POST",
       batchSize = 3,
       batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
