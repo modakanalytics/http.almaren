@@ -43,6 +43,7 @@ object Alias {
 private[almaren] case class HTTP(
   headers: Map[String, String],
   params: Map[String, String],
+  hiddenParams: Map[String, String],
   method: String,
   requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
   session: () => requests.Session,
@@ -72,7 +73,7 @@ private[almaren] case class HTTP(
   private def request(row:Row, session:Session): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString()
     val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row,session,url,headers,params,method,connectTimeout,readTimeout))
+    val response = Try(requestHandler(row,session,url,headers,params ++ hiddenParams,method,connectTimeout,readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString()
     response match {
@@ -96,6 +97,7 @@ private[almaren] case class HTTPBatch(
   url: String,
   headers: Map[String, String],
   params: Map[String, String],
+  hiddenParams: Map[String, String],
   method: String,
   requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
   session: () => requests.Session,
@@ -142,7 +144,7 @@ private[almaren] case class HTTPBatch(
   }
 
   private def request(data:String, session:Session): requests.Response = 
-    requestHandler(data,session,url,headers,params,method,connectTimeout,readTimeout)
+    requestHandler(data,session,url,headers,params ++ hiddenParams,method,connectTimeout,readTimeout)
 
 
 }
@@ -152,6 +154,7 @@ private[almaren] trait HTTPConnector extends Core {
   def http(
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
+    hiddenParams: Map[String, String] = Map(),
     method: String,
     requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandler,
     session: () => requests.Session = HTTPConn.defaultSession,
@@ -162,6 +165,7 @@ private[almaren] trait HTTPConnector extends Core {
     HTTP(
       headers,
       params,
+      hiddenParams,
       method,
       requestHandler,
       session,
@@ -175,6 +179,7 @@ private[almaren] trait HTTPConnector extends Core {
     url: String,
     headers: Map[String, String] = Map(),
     params: Map[String, String] = Map(),
+    hiddenParams: Map[String, String] = Map(),
     method: String,
     requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandlerBatch,
     session: () => requests.Session = HTTPConn.defaultSession,
@@ -187,6 +192,7 @@ private[almaren] trait HTTPConnector extends Core {
       url,
       headers,
       params,
+      hiddenParams,
       method,
       requestHandler,
       session,
