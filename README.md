@@ -132,6 +132,7 @@ Output:
 |----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
 | headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
 | params         | HTTP params                                                                                                             | Map[String,String]                                                 |
+| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                      | Map[String,String]                                                 |
 | method         | HTTP Method                                                                                                             | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
@@ -274,6 +275,7 @@ monotonically_increasing_id() as __ID__}
 | url            | Used to perform the HTTP request                                                           | String                                                             |
 | headers        | HTTP headers                                                                               | Map[String,String]                                                 |
 | params         | HTTP params                                                                                | Map[String,String]                                                 |
+| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                         | Map[String,String]                                                 |
 | method         | HTTP Method                                                                                | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                             | (Row,Session,String,Map[String,String],String) => requests.Respons |
 | session        | Closure to handle HTTP sessions                                                            | () = requests.Session                                              |
