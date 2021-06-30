@@ -292,7 +292,7 @@ monotonically_increasing_id() as __ID__}
 | Parameters   | Mandatory | Description                                                                                                |
 |--------------|-----------|------------------------------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component which is array[string] , it's useful to join data |
-| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST/PUT Method HTTP requests                            |
+| \_\_DATA\_\_ | Yes       | Data Content (productName,producePrice) , used in POST/PUT Method HTTP requests . For GET requuest it can empty String|
 
 
 ##### Output:
@@ -305,7 +305,8 @@ monotonically_increasing_id() as __ID__}
 | \_\_STATUS_CODE\_\_  | HTTP response code                                                                |
 | \_\_STATUS_MSG\_\_   | HTTP response message                                                             |
 | \_\_ERROR\_\_        | Java Exception                                                                    |
-| \_\_ELAPSED_TIME\_\_ | Request time in ms                                                                |
+| \_\_DATA\_\_         | Payload (Data conetent) sent to each batch API request                                                              |
+
 
 #### Methods
 
