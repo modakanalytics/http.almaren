@@ -30,7 +30,8 @@ final case class ResponseBatch(
   `__STATUS_MSG__`:Option[String] = None,
   `__ERROR__`:Option[String] = None,
   `__ELAPSED_TIME__`:Long,
-   `__URL__`:String)
+   `__URL__`:String,
+  `__DATA__`:String)
 
 
 object Alias {
@@ -125,15 +126,17 @@ private[almaren] case class HTTPBatch(
             Some(r.statusCode),
             Some(r.statusMessage),
             `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-            `__URL__` = url
+            `__URL__` = url,
+            `__DATA__` = data
           )
           case Failure(f) => {
-            logger.error("Almaren HTTP Request Error", f)
+            logger.error("Almaren HTTP Batch Request Error", f)
             ResponseBatch(
               rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
               `__ERROR__` = Some(f.getMessage()),
               `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-              `__URL__` = url
+              `__URL__` = url,
+              `__DATA__` = data
             )
             
           }
