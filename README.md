@@ -305,7 +305,7 @@ monotonically_increasing_id() as __ID__}
 | \_\_STATUS_CODE\_\_  | HTTP response code                                                                |
 | \_\_STATUS_MSG\_\_   | HTTP response message                                                             |
 | \_\_ERROR\_\_        | Java Exception                                                                    |
-| \_\_DATA\_\_         | Payload (Data conetent) sent to each batch API request                                                              |
+| \_\_DATA\_\_         | Payload (Data content) sent to each batch API request                                                              |
 
 
 #### Methods
