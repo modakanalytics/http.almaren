@@ -19,8 +19,10 @@ object HttpExample {
       .alias("SOURCE_DATA")
 
     val baseUrl = "https://jsonplaceholder.typicode.com/users/"
-    val payload = sourceDf
+    val requestDf = sourceDf
       .sql(s"select id as __ID__, concat('$baseUrl', id) as __URL__ from SOURCE_DATA")
+
+    val payload = requestDf
       .http(method = "GET")
       .deserializer("JSON", "__BODY__")
 
@@ -45,21 +47,18 @@ object HttpExample {
 
     val dbHost = "localhost"
     val dbPort = 5432
-    val dbUser = "mano"
-    val dbPass = "brau"
+    val dbUser = Some("mano")
+    val dbPass = Some("brau")
     val dbName = "http_to_postgres_database"
     val dbSchema = "http_to_postgres_schema"
     val targetTable = "ingested_users"
 
+    val dbUrl = s"jdbc:postgresql://$dbHost:$dbPort/$dbName"
+    val dbDriver = "org.postgresql.Driver"
+    val fullTableName = s"$dbSchema.$targetTable"
+
     users
-      .targetJdbc(
-        s"jdbc:postgresql://$dbHost:$dbPort/$dbName",
-        "org.postgresql.Driver",
-        s"$dbSchema.$targetTable",
-        SaveMode.Overwrite,
-        Some(dbUser),
-        Some(dbPass)
-      )
+      .targetJdbc(dbUrl, dbDriver, fullTableName, SaveMode.Overwrite, dbUser, dbPass)
       .batch
       .show()
 
