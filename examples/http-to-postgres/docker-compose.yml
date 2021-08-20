@@ -1,0 +1,36 @@
+version: '3.8'
+
+services:
+  db:
+    container_name: db
+    image: postgres:13.4
+    networks:
+      - http-to-postgres-example
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD
+    volumes:
+      - "data:/var/lib/postgresql/data"
+  psql:
+    image: postgres:13.4
+    networks:
+      - http-to-postgres-example
+    depends_on:
+      - db
+    stdin_open: true
+    tty: true
+    command: psql -h $PG_HOST -p $PG_PORT -d $PG_DB -U $PG_USER -W
+    volumes:
+      - "./sql:/sql"
+
+volumes:
+  data:
+  
+networks:
+  http-to-postgres-example:
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 192.168.42.1/24
