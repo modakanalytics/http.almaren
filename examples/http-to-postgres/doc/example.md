@@ -1,7 +1,14 @@
-# HTTP to Postgres example
+# Consuming a REST API to ingest data into a Postgres database
 
-In this example we will show you how to use the HTTP Connector to ingest user
-data from a REST API into a Postgres database.
+In this example we are going to show you how to use the HTTP connector to
+consume a REST API and ingest this data into a Postgres database.
+
+We will:
+
+1. Build and run a application;
+2. Consume user data from the [JSON Placeholder API](https://jsonplaceholder.typicode.com/users/);
+3. Flatten nested fields to a plain Data Frame using [Kenya DSL](https://github.com/modakanalytics/quenya-dsl);
+4. Ingest collected data into a local Postgres running at a local container.
 
 ## Requirements
 
@@ -16,7 +23,7 @@ In order to correct run this example you will need:
 6. `sbt` (any version)
 
 The `docker` and `docker-compose` commands will be used to run a Postgres
-container.
+container locally.
 
 JDK, spark and scala will be used to write and run the application.
 
@@ -71,7 +78,7 @@ template1=# \i /sql/00-init_database.sql
 
 Just type `Ctrl+D` to quit from psql and go back to the terminal.
 
-### Creating the schema
+### Creating the database schema
 
 To create the schema inside the example database, let's use `psql` again, now
 as the unprivileged user `mano`. All defaults are properly set on `.env` file.
@@ -94,29 +101,35 @@ but we didn't create any table yet.
 
 ## Running the example using the spark-shell
 
+In this section we will show how to run the example code step by step using
+the interactive `spark-shell`. You can skip it if you are comfortable writing
+and running spark applications.
+
 Open a new terminal and go to the root directory of this example.
 
-You can open a spark shell by typing the command:
+You can run a spark shell by typing the command:
 
 ```
 user@host$ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.9.0-2.4,com.github.music-of-the-ainur:http-almaren_2.11:1.2.0-2.4,org.postgresql:postgresql:42.2.23"
 ```
 
-After some initialization we get the scala prompt:
+Note that we need to pass as arguments the packages for the Almaren Framework
+and the postgres JDBC driver.
+
+After some initialization we get a scala prompt:
 
 ```
 scala> 
 ```
 
-This pipeline is pretty simple and could be written shortly by just chaining
-each method with the following one but we are going to split them into
-separated steps better explaining them.
+This pipeline is pretty simple and could be expressed shortly as showed on the
+final code by just chaining each method with the following one, but we are
+going to split them into separated steps for better explaining them.
 
 We are also omitting the line breaks, so you can just copy-paste the commands
 line by line.
 
-To start, let's import the packages and get the `almaren` and `spark`
-objects:
+To start, let's import all packages we will use and get the `almaren` object:
 
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
@@ -125,44 +138,32 @@ import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import org.apache.spark.sql.SaveMode
 
 val almaren = Almaren("HTTP to Postgres Example")
-
-val spark = almaren.spark.master("local[*]").config("spark.sql.shuffle.partitions", "1").getOrCreate()
 ```
+
+The HTTP connector is meant to make one request for each row of a given data
+frame. In a real world application you will get it from a file or another
+database but here we will just create a fake data source.
+
+The important thing to note is that HTTP connector expects to see at least
+two columns, an ID called `__ID__` and an url called `__URL__`.
 
 In our example we are going to run one HTTP request for each row of a source
 data frame. Let's suppose that all we have are the user IDs coming from a file
 or another database:
 
 ```scala
-val sourceDf = almaren.builder.sourceDataFrame(spark.range(1, 11)).alias("SOURCE_DATA")
+val sourceDf = almaren.builder.sourceSql("select explode(array(1,2,3,4,5,6,7,8,9,10)) as __ID__").sqlExpr("__ID__", s"concat('$baseUrl',__ID__) as __URL__")
 ```
 
-We can view the content of `sourceDF` by calling the methods `.batch.show()` on it:
+Note that `sourceDf` is not a `DataFrame` object, but instead
+a `Option[com.github.music.of.the.ainur.almaren.Tree]` object. In order
+to get access to the real `DataFrame` object and be able to  inspect its
+content you need to call `batch` on it.
+
+So let's take a look on what we got:
 
 ```
 scala> sourceDf.batch.show()
-+---+
-| id|
-+---+
-|  1|
-|  2|
-|...|
-| 10|
-+---+
-```
-
-But in order to make the HTTP request we must provide at leas the columns
-`__ID__` and `__URL__`:
-
-```scala
-val baseUrl = "https://jsonplaceholder.typicode.com/users/"
-val requestDf = sourceDf.sql(s"select id as __ID__, concat('$baseUrl', id) as __URL__ from SOURCE_DATA")
-```
-
-Let's see what we got:
-
-```
-scala> requestDf.batch.show()
 +------+--------------------+
 |__ID__|             __URL__|
 +------+--------------------+
@@ -173,13 +174,59 @@ scala> requestDf.batch.show()
 +------+--------------------+
 ```
 
-Now let's do the requests and get the deserialized JSON data:
+To make an HTTP request we just need to call `http()` with the desired params:
 
 ```scala
-val payload = requestDf.http(method = "GET").deserializer("JSON", "__BODY__")
+val responseDf = sourceDf.http(method = "GET")
 ```
 
-Let's take a look on what we got:
+Let's see the content of `responseDf`:
+
+```
+scala> responseDf.batch.show()
+21/08/24 08:34:49 WARN SparkSession$Builder: Using an existing SparkSession; some spark core configurations may not take effect.
++------+--------------+--------------------+---------------+--------------+---------+----------------+--------------------+
+|__ID__|      __BODY__|          __HEADER__|__STATUS_CODE__|__STATUS_MSG__|__ERROR__|__ELAPSED_TIME__|             __URL__|
++------+--------------+--------------------+---------------+--------------+---------+----------------+--------------------+
+|     1|{"id": 1,"n...|[etag -> [W/"1fd-...|            200|            OK|     null|             109|https://jsonplace...|
+|     2|{"id": 2,"n...|[etag -> [W/"1fd-...|            200|            OK|     null|              63|https://jsonplace...|
+|   ...|      ...     |         ...        |            ...|           ...|      ...|             ...|         ...        |
+|    10|{"id": 10,"...|[etag -> [W/"1ff-...|            200|            OK|     null|              64|https://jsonplace...|
++------+--------------+--------------------+---------------+--------------+---------+----------------+--------------------+
+
+```
+
+We are interested on the JSON payload inside the `__BODY__` column so we need
+to deserialized it first.
+
+The framework is capable to infer the JSON schema to us but at a cost of waving
+an additional batch of requests.
+
+To prevent these additional calls each time our application runs, we need to
+manually pass the JSON schema to our deserializer call.
+
+We can write it manually or let the framework to the job for us with this
+simple snippet:
+
+```scala
+val bodyDf = responseDf.batch.toDF
+val jsonSchema = Util.genDDLFromJsonString(bodyDf, "__BODY__", 0.1)
+```
+
+Just type `jsonSchema` on spark-shell to see its content:
+
+```
+scala> val jsonSchema = Util.genDDLFromJsonString(bodyDf, "__BODY__", 0.1)
+jsonSchema: String = `address` STRUCT<`city`: STRING, `geo`: STRUCT<`lat`: ...
+```
+
+Now let's use this `jsonSchema` and deserialize the payload:
+
+```scala
+val payload = responseDf.deserializer("JSON", "__BODY__", Some(jsonSchema))
+```
+
+And inspect the result:
 ```
 scala> payload.batch.show()
 +------+------------------------+--------------------+--------------------+--------------------+--------------------+
@@ -201,8 +248,9 @@ provide a simple mapping for each field:
 `nested.json.path` + `dolar sign` + `my_new_column_name` + `colon sigh` + `TypeName`
 
 So let's flatten the nested user data with:
+
 ```scala
-val users = payload.dsl(
+val kenyaDsl =
   """
     | id$id:LongType
     | name$full_name:StringType
@@ -218,10 +266,12 @@ val users = payload.dsl(
     | address.geo.lng$address_lng:StringType
     | company.name$company_name:StringType
     | company.catchPhrase$company_catch_phrase:StringType
-    | company.bs$company_bs:StringType""".stripMargin)
+    | company.bs$company_bs:StringType""".stripMargin
+
+val users = payload.dsl(kenyaDsl)
 ```
 
-And let's see the result:
+And let's also see the result:
 
 ```
 scala> users.batch.show()
@@ -235,7 +285,8 @@ scala> users.batch.show()
 +---+--------------------+----------------+-----------------+-------------+--------------+
 ```
 
-Now sending this data to Postgres is pretty trivial using the JDBC Connector:
+Now all user data is flattened and sending it to Postgres is pretty trivial.
+We just need to use the JDBC Connector:
 
 ```scala
 val dbHost = "localhost"
@@ -253,7 +304,7 @@ val fullTableName = s"$dbSchema.$targetTable"
 val result = users.targetJdbc(dbUrl, dbDriver, fullTableName, SaveMode.Overwrite, Some(dbUser), Some(dbPass))
 ```
 
-Let's call `batch` on `result` to exec the pipeline:
+By calling `batch` on `result` we get the pipeline executed:
 ```
 scala> result.batch
 res3: org.apache.spark.sql.DataFrame = [id: bigint, full_name: string ... 13 more fields]
@@ -263,7 +314,7 @@ And finally let's get back to the `psql` prompt and check if the data was
 properly inserted:
 
 ```
-http_to_postgres_database=> select id, full_name, '...' as "many columns", address_lat, address_lng, company_name from ingested_users;
+http_to_postgres_database=> select * from ingested_users;
  id |        full_name         | many columns | address_lat | address_lng |    company_name    
 ----+--------------------------+--------------+-------------+-------------+--------------------
   6 | Mrs. Dennis Schulist     | ...          | -71.4197    | 71.7478     | Considine-Lockman
@@ -277,53 +328,135 @@ Note that we didn't create the table. Spark just did it for us. But the database
 schema, into which the table was created, should be created before or the
 ingestion will fail.
 
-## The full pipeline condensed
+## Packaging this example on an application
+
+All we need to build an application using `sbt` is a simple `build.sbt` file
+listing all dependencies and a single `scala` file:
+
+### build.sbt
+
+The dependencies are pretty self-explanatory:
+
+```sbt
+name := "http-to-postgres-example"
+
+version := "0.1"
+
+scalaVersion := "2.11.12"
+
+libraryDependencies ++= Seq(
+  "org.apache.spark" %% "spark-core" % "2.4.8",
+  "org.apache.spark" %% "spark-sql" % "2.4.8" % "provided",
+  "com.github.music-of-the-ainur" % "almaren-framework_2.11" % "0.9.0-2.4",
+  "com.github.music-of-the-ainur" % "http-almaren_2.11" % "1.2.0-2.4",
+  "org.postgresql" % "postgresql" % "42.2.23"
+)
+```
+
+### HttpExample.scala
+
+Put all code on a file at `./src/main/scala/com.modakanalytics/HttpExample.scala`:
 
 ```scala
+package com.modakanalytics
+
 import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import org.apache.spark.sql.SaveMode
 
-val almaren = Almaren("HTTP to Postgres Example")
-val spark = almaren.spark
-  .master("local[*]")
-  .config("spark.sql.shuffle.partitions", "1")
-  .getOrCreate()
+object HttpExample {
+  def main(args: Array[String]): Unit = {
+    val almaren = Almaren("HTTP to Postgres Example")
 
-val sourceDf = almaren.builder
-  .sourceDataFrame(spark.range(1, 11))
-  .alias("SOURCE_DATA")
+    val baseUrl = "https://jsonplaceholder.typicode.com/users/"
 
-sourceDf
-  .sql(s"select id as __ID__, concat('https://jsonplaceholder.typicode.com/users/', id) as __URL__ from SOURCE_DATA")
-  .http(method = "GET")
-  .deserializer("JSON", "__BODY__")
-  .dsl(
-    """
-      | id$id:LongType
-      | name$full_name:StringType
-      | username$username:StringType
-      | email$email:StringType
-      | phone$phone:StringType
-      | website$site:StringType
-      | address.street$address_street:StringType
-      | address.suite$address_suite:StringType
-      | address.city$address_city:StringType
-      | address.zipcode$address_zipcode:StringType
-      | address.geo.lat$address_lat:StringType
-      | address.geo.lng$address_lng:StringType
-      | company.name$company_name:StringType
-      | company.catchPhrase$company_catch_phrase:StringType
-      | company.bs$company_bs:StringType""".stripMargin)
-  .targetJdbc(
-    url = s"jdbc:postgresql://localhost/http_to_postgres_database",
-    driver = "org.postgresql.Driver", "http_to_postgres_schema.ingested_users",
-    saveMode = SaveMode.Overwrite,
-    user = Some("mano"),
-    password = Some("brau")
-  )
-  .batch
-  .show()
+    val jsonSchema =
+      """`address` STRUCT<
+        |   `city`: STRING,
+        |   `geo`: STRUCT<
+        |     `lat`: STRING,
+        |     `lng`: STRING
+        |   >,
+        |   `street`: STRING,
+        |   `suite`: STRING,
+        |   `zipcode`: STRING
+        | >,
+        | `company` STRUCT<
+        |   `bs`: STRING,
+        |   `catchPhrase`: STRING,
+        |   `name`: STRING
+        | >,
+        | `email` STRING,
+        | `id` BIGINT,
+        | `name` STRING,
+        | `phone` STRING,
+        | `username` STRING,
+        | `website` STRING""".stripMargin
 
+    val kenyaDsl =
+      """
+        | id$id:LongType
+        | name$full_name:StringType
+        | username$username:StringType
+        | email$email:StringType
+        | phone$phone:StringType
+        | website$site:StringType
+        | address.street$address_street:StringType
+        | address.suite$address_suite:StringType
+        | address.city$address_city:StringType
+        | address.zipcode$address_zipcode:StringType
+        | address.geo.lat$address_lat:StringType
+        | address.geo.lng$address_lng:StringType
+        | company.name$company_name:StringType
+        | company.catchPhrase$company_catch_phrase:StringType
+        | company.bs$company_bs:StringType""".stripMargin
+
+    almaren.builder
+      .sourceSql("select explode(array(1,2,3,4,5,6,7,8,9,10)) as __ID__") // Get your existing data
+      .sqlExpr("__ID__", s"concat('$baseUrl',__ID__) as __URL__")       // Add one URL for each row
+      .http(method = "GET")                                                    // Make the HTTP request
+      .deserializer("JSON", "__BODY__", Some(jsonSchema)) // Convert the payload to JSON
+      .dsl(kenyaDsl)                                                           // Use the DSL to flatten data
+      .targetJdbc(                                                             // Send data to database
+        url = s"jdbc:postgresql://localhost/http_to_postgres_database",
+        driver = "org.postgresql.Driver", "http_to_postgres_schema.ingested_users",
+        saveMode = SaveMode.Overwrite,
+        user = Some("mano"),
+        password = Some("brau")
+      )
+      .batch
+
+    sys.exit(0)
+  }
+}
+```
+
+### Generating the jar file
+
+To generate the jar file, just type on terminal at the root directory of this
+example:
+
+```
+user@host$ sbt package
+[info] welcome to sbt 1.5.5 (AdoptOpenJDK Java 1.8.0_292)
+[info] loading settings for project http-to-postgres-build from plugins.sbt ...
+[info] loading project definition from /home/user/http-to-postgres/project
+[info] loading settings for project http-to-postgres from build.sbt ...
+[info] set current project to http-to-postgres-example (in build file:/home/user/http-to-postgres/)
+[info] compiling 1 Scala source to /home/user/http-to-postgres/target/scala-2.11/classes ...
+[success] Total time: 6 s, completed 24/08/2021 09:15:34
+```
+
+If all gone well, you will end up with a jar file at
+`./target/scala-2.11/http-to-postgres-example_2.11-0.1.jar`.
+
+You can run it from terminal with:
+
+```
+spark-submit \
+  --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.9.0-2.4,com.github.music-of-the-ainur:http-almaren_2.11:1.2.0-2.4,org.postgresql:postgresql:42.2.23" \
+  --class com.modakanalytics.HttpExample \
+  --master local \
+  ./target/scala-2.11/http-to-postgres-example_2.11-0.1.jar
 ```
