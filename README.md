@@ -150,7 +150,7 @@ Output:
 |--------------|-----------|------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
 | \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
-| \_\_DATA\_\_ | No        | Data Content (productName,producePrice) , used in POST/PUT Method HTTP requests    |
+| \_\_DATA\_\_ | No        | Data Content, used in POST/PUT Method HTTP requests    |
 
 
 ##### Output:
@@ -292,7 +292,7 @@ monotonically_increasing_id() as __ID__}
 | Parameters   | Mandatory | Description                                                                                                |
 |--------------|-----------|------------------------------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component which is array[string] , it's useful to join data |
-| \_\_DATA\_\_ | Yes       | Data Content (productName,producePrice) , used in POST/PUT Method HTTP requests . For GET request it can be empty String|
+| \_\_DATA\_\_ | Yes       | Data Content, used in POST/PUT Method HTTP requests|
 
 
 ##### Output:
