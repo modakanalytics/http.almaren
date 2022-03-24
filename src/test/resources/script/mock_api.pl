@@ -20,5 +20,11 @@ my $payload = { data => { age => 25, salary => 25000 } };
         $payload->{data}->{country}   = $c->stash('country');
         $c->render( json => $payload );
     };
+    
+    post '/batchAPI' => sub ($c) {
+        my $foo = parse_json $c->req->body;
+        my $payload2 -> {data} = $foo;
+        $c->render(json => $payload2);
+    };
 }
 app->start;

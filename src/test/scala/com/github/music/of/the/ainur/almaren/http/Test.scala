@@ -5,7 +5,8 @@ import org.scalatest._
 import org.apache.spark.sql.functions._
 import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-import com.github.music.of.the.ainur.almaren.http.HTTP.HTTPImplicit
+import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
+import org.apache.spark.sql.Row
 
 class Test extends FunSuite with BeforeAndAfter {
   val almaren = Almaren("http-almaren")
@@ -19,6 +20,9 @@ class Test extends FunSuite with BeforeAndAfter {
   spark.sparkContext.setLogLevel("ERROR")
 
 
+  import org.apache.log4j.{Level, Logger}
+  Logger.getLogger("com.github.music.of.the.ainur.almaren").setLevel(Level.INFO)
+
   import spark.implicits._
 
   val df = Seq(
@@ -27,7 +31,7 @@ class Test extends FunSuite with BeforeAndAfter {
     ("Michael", "Johnson", "Indonesia"),
     ("Chris", "Lee", "Brazil"),
     ("Mike", "Brown", "Russia")
-  ).toDF("first_name", "last_name", "country")
+  ).toDF("first_name", "last_name", "country").coalesce(1)
 
   df.createOrReplaceTempView("person_info")
 
@@ -54,12 +58,13 @@ class Test extends FunSuite with BeforeAndAfter {
   test(getSessionDf, getHttpDf(queryGet, "GET", true), "GET with Session")
   test(getDf, getHttpDf(queryGet, "GET", false), "GET without Session")
 
+   
   def getHttpDf(query: String, methodType: String, isSession: Boolean): DataFrame = {
 
     val tempDf = if (isSession) {
       almaren.builder
         .sourceSql(query).alias("PERSON_DATA")
-        .http(method = methodType, session = newSession)
+        .http(params = Map("username" -> "sample"),hiddenParams = Map("username" -> "sample","password" -> "sample"),method = methodType, session = newSession)
     }
     else {
       almaren.builder
@@ -90,6 +95,32 @@ class Test extends FunSuite with BeforeAndAfter {
       .batch
   }
 
+  val httpBatchDf = almaren.builder
+    .sourceDataFrame(df)
+    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+    .httpBatch(
+      url = "http://127.0.0.1:3000/batchAPI",
+      params = Map("username" -> "sample"),
+      hiddenParams = Map("username" -> "sample","password" -> "sample"),
+      method = "POST",
+      batchSize = 3,
+      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+    .deserializer("JSON", "__BODY__", Some("`data` ARRAY<STRUCT<`country`: STRING, `first_name`: STRING, `last_name`: STRING>>"))
+    .sql("select   explode(arrays_zip(__ID__, data)) as vars , __STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from __TABLE__")
+    .sql("select vars.__ID__ as __ID__ ,vars.data as data ,status_code, elapsed_time from __TABLE__ ")
+    .dsl(
+      """__ID__$__ID__:StringType
+        |data.country$country:StringType
+        |data.first_name$first_name:StringType
+        |data.last_name$last_name:StringType
+        |status_code$status_code:IntegerType
+        |elapsed_time$elapsed_time:LongType""".stripMargin)
+    .sql("select __TABLE__.__ID__ as id ,first_name,last_name,country,status_code  from __TABLE__ inner join BATCH_DATA on __TABLE__.__ID__ = BATCH_DATA.__ID__ ")
+    .batch
+
+  val getBatchDf = spark.read.parquet("src/test/resources/data/httpBatch.parquet")
+
+  test(getBatchDf, httpBatchDf, "test for httpBatch method")
 
   // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {
