@@ -2,6 +2,7 @@
 .metals/
 .bloop/
 project/metals.sbt
+.bsp/sbt.json
 
 # spark
 spark-warehouse
