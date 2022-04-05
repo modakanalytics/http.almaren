@@ -2,11 +2,11 @@
 
 [![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.3-$SPARK_VERSION"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.4-$SPARK_VERSION"
 ```
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.3-$SPARK_VERSION,com.github.music-of-the-ainur:http-almaren_2.12:1.2.3-$SPARK_VERSION"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.3-$SPARK_VERSION,com.github.music-of-the-ainur:http-almaren_2.12:1.2.4-$SPARK_VERSION"
 ```
 ## Table of Contents
 
