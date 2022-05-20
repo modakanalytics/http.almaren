@@ -2,7 +2,7 @@
 .metals/
 .bloop/
 project/metals.sbt
-.bsp/
+.bsp/*
 
 # spark
 spark-warehouse
