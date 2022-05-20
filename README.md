@@ -81,7 +81,7 @@ val df = almaren.builder
                 to_json(named_struct('data',named_struct('name',firstName + " " + lastName))) as __DATA__ 
             FROM DATA""")
     .http(method = "POST", threadPoolSize = 10, batchSize = 10000)
-    .deserializer("JSON","__BODY__",httpOutpustSchema)
+    .deserializer("JSON","__BODY__",httpOutpustSchema).alias("TABLE")
     .sql("""SELECT
                 T.origin,
                 D.firstName,
@@ -90,7 +90,7 @@ val df = almaren.builder
                 T.url,
                 T.__ERROR__ as error,
                 T.__ELAPSED_TIME__ as request_time
-            FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__""")
+            FROM TABLE T JOIN DATA D ON d.id = t.__ID__""")
     .batch
 
 df.show(false)
@@ -115,7 +115,7 @@ Output:
                 T.url,
                 T.__ERROR__ as error,
                 T.__ELAPSED_TIME__ as request_time
-            FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__}
+            FROM TABLE T JOIN DATA D ON d.id = t.__ID__}
             
 +-----------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
 |origin     |firstName|lastName|age|status_code|url                                          |error|request_time|
