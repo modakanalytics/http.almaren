@@ -5,7 +5,7 @@ lazy val scala212 = "2.12.15"
 
 ThisBuild / scalaVersion := scala212
 
-val sparkVersion = "3.1.3"
+val sparkVersion = "3.2.1"
 val majorVersionReg = "([0-9]+\\.[0-9]+).{0,}".r
 
 val majorVersionReg(majorVersion) = sparkVersion
@@ -15,7 +15,7 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-  "com.github.music-of-the-ainur" %% "almaren-framework" % s"0.9.3-${majorVersion}" % "provided",
+  "com.github.music-of-the-ainur" %% "almaren-framework" % s"0.9.4-${majorVersion}" % "provided",
   "com.lihaoyi" %% "requests" % "0.7.0",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.0",
   "org.scalatest" %% "scalatest" % "3.0.5" % "test"
