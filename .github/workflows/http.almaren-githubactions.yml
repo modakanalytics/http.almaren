@@ -29,7 +29,7 @@ jobs:
       - name: Setup web environment
         run: |
           curl -L https://cpanmin.us | perl - App::cpanminus
-          cpanm -l CPAN Crypt::Eksblowfish::Bcrypt
+          cpanm -nq LWP::Protocol::https
           cpanm --local-lib=~/perl5 local::lib && eval $(perl -I ~/perl5/lib/perl5/ -Mlocal::lib)
           cpanm Mojolicious
           cpanm JSON::Parse
