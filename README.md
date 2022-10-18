@@ -1,15 +1,24 @@
 # HTTP Connector
 
-[![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
+[![Build Status](https://github.com/music-of-the-ainur/http.almaren/actions/workflows/http.almaren-githubactions.yml/badge.svg)](https://github.com/music-of-the-ainur/http.almaren/actions/workflows/http.almaren-githubactions.yml)
+
+To add http.almaren  dependency to your sbt build:
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.4-$SPARK_VERSION"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.5-3.3"
 ```
 
+To run in spark-shell:
+For scala-version(2.12):
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.3-$SPARK_VERSION,com.github.music-of-the-ainur:http-almaren_2.12:1.2.4-$SPARK_VERSION"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.8-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.3"
 ```
+For scala-version(2.13):
+```
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.13:0.9.8-3.3,com.github.music-of-the-ainur:http-almaren_2.13:1.2.5-3.3"
+```
+
 ## Table of Contents
-
+- [Maven / Ivy Package Usage](#maven--ivy-package-usage)
 - [Methods](#methods)
   * [HTTP](#http)
     + [Example](#example)
@@ -30,6 +39,23 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
     + [Request Handler Batch](#request-handler-batch)
       - [Batch Delimiter](#batch-delimiter)
       - [Examples](#examples)
+
+
+#### Maven / Ivy Package Usage
+The connector is also available from the
+[Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
+repository. It can be used using the `--packages` option or the
+`spark.jars.packages` configuration property. Use the following value
+
+| version                    | Connector Artifact                                          |
+|----------------------------|-------------------------------------------------------------|
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.5-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.5-2.4` |
+
 
 ## Methods
 
@@ -81,7 +107,7 @@ val df = almaren.builder
                 to_json(named_struct('data',named_struct('name',firstName + " " + lastName))) as __DATA__ 
             FROM DATA""")
     .http(method = "POST", threadPoolSize = 10, batchSize = 10000)
-    .deserializer("JSON","__BODY__",httpOutpustSchema)
+    .deserializer("JSON","__BODY__",httpOutpustSchema).alias("TABLE")
     .sql("""SELECT
                 T.origin,
                 D.firstName,
@@ -90,7 +116,7 @@ val df = almaren.builder
                 T.url,
                 T.__ERROR__ as error,
                 T.__ELAPSED_TIME__ as request_time
-            FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__""")
+            FROM TABLE T JOIN DATA D ON d.id = t.__ID__""")
     .batch
 
 df.show(false)
@@ -115,7 +141,7 @@ Output:
                 T.url,
                 T.__ERROR__ as error,
                 T.__ELAPSED_TIME__ as request_time
-            FROM __TABLE__ T JOIN DATA D ON d.id = t.__ID__}
+            FROM TABLE T JOIN DATA D ON d.id = t.__ID__}
             
 +-----------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
 |origin     |firstName|lastName|age|status_code|url                                          |error|request_time|

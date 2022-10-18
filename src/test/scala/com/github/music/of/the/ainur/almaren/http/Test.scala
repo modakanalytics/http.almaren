@@ -7,8 +7,9 @@ import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import org.apache.spark.sql.Row
+import org.scalatest.funsuite.AnyFunSuite
 
-class Test extends FunSuite with BeforeAndAfter {
+class Test extends AnyFunSuite with BeforeAndAfter {
   val almaren = Almaren("http-almaren")
 
   val spark: SparkSession = almaren.spark
@@ -73,8 +74,8 @@ class Test extends FunSuite with BeforeAndAfter {
     }
 
     tempDf
-      .deserializer("JSON", "__BODY__", Some(schema))
-      .sql("select __ID__,data,__STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from __TABLE__")
+      .deserializer("JSON", "__BODY__", Some(schema)).alias("TABLE")
+      .sql("select __ID__,data,__STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from TABLE").alias("TABLE1")
       .dsl(
         """__ID__$__ID__:StringType
           |elapsed_time$elapsed_time:LongType
@@ -83,7 +84,7 @@ class Test extends FunSuite with BeforeAndAfter {
           |data.age$age:LongType
           |data.salary$salary:DoubleType
           |status_code$status_code:IntegerType""".stripMargin
-      )
+      ).alias("TABLE2")
       .sql(
         """select T.__ID__ as id ,
          full_name ,
@@ -91,7 +92,7 @@ class Test extends FunSuite with BeforeAndAfter {
          age,
          salary,
          status_code
-        from __TABLE__ T join PERSON_DATA P on T.__ID__ = P.__ID__""")
+        from TABLE2 T join PERSON_DATA P on T.__ID__ = P.__ID__""")
       .batch
   }
 
@@ -105,17 +106,17 @@ class Test extends FunSuite with BeforeAndAfter {
       method = "POST",
       batchSize = 3,
       batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
-    .deserializer("JSON", "__BODY__", Some("`data` ARRAY<STRUCT<`country`: STRING, `first_name`: STRING, `last_name`: STRING>>"))
-    .sql("select   explode(arrays_zip(__ID__, data)) as vars , __STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from __TABLE__")
-    .sql("select vars.__ID__ as __ID__ ,vars.data as data ,status_code, elapsed_time from __TABLE__ ")
+    .deserializer("JSON", "__BODY__", Some("`data` ARRAY<STRUCT<`country`: STRING, `first_name`: STRING, `last_name`: STRING>>")).alias("TABLE")
+    .sql("select   explode(arrays_zip(__ID__, data)) as vars , __STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from TABLE").alias("TABLE1")
+    .sql("select vars.__ID__ as __ID__ ,vars.data as data ,status_code, elapsed_time from TABLE1 ").alias("TABLE2")
     .dsl(
       """__ID__$__ID__:StringType
         |data.country$country:StringType
         |data.first_name$first_name:StringType
         |data.last_name$last_name:StringType
         |status_code$status_code:IntegerType
-        |elapsed_time$elapsed_time:LongType""".stripMargin)
-    .sql("select __TABLE__.__ID__ as id ,first_name,last_name,country,status_code  from __TABLE__ inner join BATCH_DATA on __TABLE__.__ID__ = BATCH_DATA.__ID__ ")
+        |elapsed_time$elapsed_time:LongType""".stripMargin).alias("TABLE3")
+    .sql("select TABLE3.__ID__ as id ,first_name,last_name,country,status_code  from TABLE3 inner join BATCH_DATA on TABLE3.__ID__ = BATCH_DATA.__ID__ ")
     .batch
 
   val getBatchDf = spark.read.parquet("src/test/resources/data/httpBatch.parquet")
