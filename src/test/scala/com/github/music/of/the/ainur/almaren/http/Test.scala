@@ -7,8 +7,9 @@ import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import org.apache.spark.sql.Row
+import org.scalatest.funsuite.AnyFunSuite
 
-class Test extends FunSuite with BeforeAndAfter {
+class Test extends AnyFunSuite with BeforeAndAfter {
   val almaren = Almaren("http-almaren")
 
   val spark: SparkSession = almaren.spark
