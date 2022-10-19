@@ -1,6 +1,6 @@
 # HTTP Connector
 
-[![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
+[![Build Status](https://github.com/modakanalytics/http.almaren/actions/workflows/http.almaren-githubactiojns.yml/badge.svg)](https://github.com/modakanalytics/http.almaren/actions/workflows/http.almaren-githubactiojns.yml)
 
 To add http.almaren Connector to your sbt build:
 
