@@ -1,15 +1,20 @@
 # HTTP Connector
 
 [![Build Status](https://travis-ci.com/modakanalytics/http.almaren.svg?token=TEB3zRDqVUuChez9334q&branch=master)](https://travis-ci.com/modakanalytics/http.almaren)
-```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.4-$SPARK_VERSION"
-```
+
+To add http.almaren Connector to your sbt build:
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.3-$SPARK_VERSION,com.github.music-of-the-ainur:http-almaren_2.12:1.2.4-$SPARK_VERSION"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.5-3.1"
+```
+To run in spark-shell:
+
+```
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.8-3.1,com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.1"
 ```
 ## Table of Contents
 
+- [Connector Usage](#connector-usage)
 - [Methods](#methods)
   * [HTTP](#http)
     + [Example](#example)
@@ -30,6 +35,23 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
     + [Request Handler Batch](#request-handler-batch)
       - [Batch Delimiter](#batch-delimiter)
       - [Examples](#examples)
+
+### Connector Usage
+
+#### Maven / Ivy Package Usage
+The connector is also available from the
+[Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
+repository. It can be used using the `--packages` option or the
+`spark.jars.packages` configuration property. Use the following value
+
+| version                    | Connector Artifact                                          |
+|----------------------------|-------------------------------------------------------------|
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.5-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.5-2.4` |
 
 ## Methods
 
