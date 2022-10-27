@@ -36,15 +36,9 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
       - [Batch Delimiter](#batch-delimiter)
       - [Examples](#examples)
 
-### Connector Usage
+HTTP Connector is available in [Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur) repository.
 
-#### Maven / Ivy Package Usage
-The connector is also available from the
-[Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
-repository. It can be used using the `--packages` option or the
-`spark.jars.packages` configuration property. Use the following value
-
-| version                    | Connector Artifact                                          |
+| versions                   | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
 | Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.5-3.3` |
 | Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.3` |
