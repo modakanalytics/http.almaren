@@ -1,7 +1,7 @@
 ThisBuild / name := "http.almaren"
 ThisBuild / organization := "com.github.music-of-the-ainur"
 
-lazy val scala212 = "2.12.15"
+lazy val scala212 = "2.12.10"
 
 ThisBuild / scalaVersion := scala212
 
