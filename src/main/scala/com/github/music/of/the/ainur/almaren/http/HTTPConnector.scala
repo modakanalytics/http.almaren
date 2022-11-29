@@ -83,7 +83,10 @@ private[almaren] case class HTTP(
         Some(r.text()),
         r.headers,
         Some(r.statusCode),
-        Some(r.statusMessage),
+        r.statusMessage match {
+          case null => None
+          case _ => Some(r.statusMessage)
+        },
         `__ELAPSED_TIME__` = elapsedTime,
         `__URL__` = url)
       case Failure(f) => {
@@ -124,7 +127,10 @@ private[almaren] case class HTTPBatch(
             Some(r.text()),
             r.headers,
             Some(r.statusCode),
-            Some(r.statusMessage),
+            r.statusMessage match {
+              case null => None
+              case _ => Some(r.statusMessage)
+            },
             `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
             `__URL__` = url,
             `__DATA__` = data

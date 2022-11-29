@@ -4,12 +4,12 @@
 
 To add HTTP connector dependency to your sbt build:
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.5-2.4"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.6-2.4"
 ```
 
 To run in spark-shell:
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.9.8-2.4,com.github.music-of-the-ainur:http-almaren_2.11:1.2.5-2.4"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.11:0.9.8-2.4,com.github.music-of-the-ainur:http-almaren_2.11:1.2.6-2.4"
 ```
 
 ## Table of Contents
@@ -41,12 +41,12 @@ repository.
 
 | version                    | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
-| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.5-3.3` |
-| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.3` |
-| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.2` |
-| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-3.1` |
-| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.5-2.4` |
-| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.5-2.4` |
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.6-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.6-2.4` |
 
 ## Methods
 
