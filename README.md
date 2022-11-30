@@ -1,6 +1,6 @@
 # HTTP Connector
 
-[![Build Status](https://github.com/music-of-the-ainur/http.almaren/actions/workflows/http.almaren-githubactions.yml/badge.svg)](https://github.com/music-of-the-ainur/http.almaren/actions/workflows/http.almaren-githubactions.yml)
+[![Build Status](https://github.com/modakanalytics/http.almaren/actions/workflows/http-almaren-githubactions.yml/badge.svg)](https://github.com/modakanalytics/http.almaren/actions/workflows/http-almaren-githubactions.yml)
 
 To add http.almaren  dependency to your sbt build:
 ```
