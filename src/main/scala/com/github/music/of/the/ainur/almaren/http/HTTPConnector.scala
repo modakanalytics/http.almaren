@@ -52,7 +52,7 @@ private[almaren] case class HTTP(
   readTimeout: Int,
   threadPoolSize: Int,
   batchSize: Int,
-  maxRequestsTime: Option[Long],
+  maxRequestsTime: Long,
   maxRequestsByTimeNum: Option[Long]) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
@@ -73,8 +73,8 @@ private[almaren] case class HTTP(
               accCount.reset()
             }
             if(accCount.value == 0) {
-              logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxRequestsTime.get}")
-              Thread.sleep(maxRequestsTime.get * 1000)
+              logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxRequestsTime}")
+              Thread.sleep(maxRequestsTime * 1000)
               if (accCount.value == 0)
                 accCount.reset()
               accCount.add(1)
@@ -189,7 +189,7 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
     batchSize: Int = 5000,
-    maxRequestsTime: Option[Long] = Some(60),
+    maxRequestsTime: Long = 60,
     maxRequestsByTimeNum: Option[Long] = None): Option[Tree] =
     HTTP(
       headers,
