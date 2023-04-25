@@ -72,13 +72,13 @@ private[almaren] case class HTTP(
               logger.info(s"Reached maximum requests in the connector value by ${reqCount}")
               accCount.reset()
             }
-            if(accCount.value == 0){
+            if(accCount.value == 0) {
               logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxTimeDuration.get}")
               Thread.sleep(maxTimeDuration.get * 1000)
+              if (accCount.value == 0)
+                accCount.reset()
+              accCount.add(1)
             }
-            if(accCount.value == 0)
-              accCount.reset()
-            accCount.add(1)
           })
           request(row,s)
         })
