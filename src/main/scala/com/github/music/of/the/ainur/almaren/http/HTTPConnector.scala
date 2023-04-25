@@ -189,7 +189,7 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
     batchSize: Int = 5000,
-    maxTimeDuration: Option[Long] = None,
+    maxTimeDuration: Option[Long] = Some(60),
     maxRequests: Option[Long] = None): Option[Tree] =
     HTTP(
       headers,
