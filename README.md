@@ -150,20 +150,20 @@ Output:
 
 #### Parameters
 
-| Parameter      | Description                                                                                                                         | Type                                                               |
-|----------------|-------------------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
-| headers        | HTTP headers                                                                                                                        | Map[String,String]                                                 |
-| params         | HTTP params                                                                                                                         | Map[String,String]                                                 |
-| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                                  | Map[String,String]                                                 |
-| method         | HTTP Method                                                                                                                         | String                                                             |
-| requestHandler | Closure to handle HTTP request                                                                                                      | (Row,Session,String,Map[String,String],String) => requests.Respons |
-| session        | Closure to handle HTTP sessions                                                                                                     | () = requests.Session                                              |
-| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                                          | Int                                                                |
-| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                               | Int                                                                |
-| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize             | Int                                                                |
-| batchSize      | How many records a single thread will process                                                                                       | Int                                                                |
-| maxRequestsTime      | time duration in secs to sleep the process after certain number of maxRequests throught the process in executors                    | Option[Long]                                                       |
-| maxRequestsByTimeSecs      | Max number request to sleep the process and resume again, default value is none unless it is provided will not execute this process | Option[Long]                                                                   |
+| Parameter      | Description                                                                                                                | Type                                                               |
+|----------------|----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| headers        | HTTP headers                                                                                                               | Map[String,String]                                                 |
+| params         | HTTP params                                                                                                                | Map[String,String]                                                 |
+| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                         | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                                                | String                                                             |
+| requestHandler | Closure to handle HTTP request                                                                                             | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions                                                                                            | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                                 | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                      | Int                                                                |
+| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize    | Int                                                                |
+| batchSize      | How many records a single thread will process                                                                              | Int                                                                |
+| maxRequestsTime      | time duration in secs to sleep the process after certain number of maxRequestsByTimeSecs throught the process in executors | Option[Long]                                                       |
+| maxRequestsByTimeSecs      | Determines the maximum number of maxRequestsByTime that should be executed within a specific time interval.                | Option[Long]                                                                   |
 
 
 #### Special Columns
