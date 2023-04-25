@@ -1,10 +1,10 @@
 package com.github.music.of.the.ainur.almaren.http
 
 import java.util.concurrent.Executors
-
 import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
+import org.apache.spark.TaskContext
 import org.apache.spark.sql.{DataFrame, Row}
 import requests.Session
 
@@ -51,19 +51,37 @@ private[almaren] case class HTTP(
   connectTimeout: Int,
   readTimeout: Int,
   threadPoolSize: Int,
-  batchSize: Int) extends Main {
+  batchSize: Int,
+  maxTimeDuration: Option[Long],
+  maxRequests: Option[Long]) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
 
     import df.sparkSession.implicits._
 
+    val accCount = df.sparkSession.sparkContext.longAccumulator("httpConnectorAcc")
     val result = df.mapPartitions(partition => {
 
       implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
       val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
-        rows.map(row => request(row,s))
+        rows.map(row => {
+          maxRequests.map(f = reqCount => {
+            if (accCount.value >= reqCount) {
+              logger.info(s"Reached maximum requests in the connector value by ${reqCount}")
+              accCount.reset()
+            }
+            if(accCount.value == 0){
+              logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxTimeDuration.get}")
+              Thread.sleep(maxTimeDuration.get * 1000)
+            }
+            if(accCount.value == 0)
+              accCount.reset()
+            accCount.add(1)
+          })
+          request(row,s)
+        })
       })
       val requests:Future[Iterator[Seq[Response]]] = Future.sequence(data)
       Await.result(requests,Duration.Inf).flatMap(s => s)
@@ -109,7 +127,7 @@ private[almaren] case class HTTPBatch(
   readTimeout: Int,
   batchSize: Int,
   batchDelimiter: (Seq[Row]) => String
-) extends Main {
+  ) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"url:{$url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
@@ -170,7 +188,9 @@ private[almaren] trait HTTPConnector extends Core {
     connectTimeout: Int = 60000,
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
-    batchSize: Int = 5000): Option[Tree] =
+    batchSize: Int = 5000,
+    maxTimeDuration: Option[Long] = None,
+    maxRequests: Option[Long] = None): Option[Tree] =
     HTTP(
       headers,
       params,
@@ -181,7 +201,9 @@ private[almaren] trait HTTPConnector extends Core {
       connectTimeout,
       readTimeout,
       threadPoolSize,
-      batchSize
+      batchSize,
+      maxTimeDuration,
+      maxRequests
     )
 
   def httpBatch(
