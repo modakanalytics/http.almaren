@@ -52,8 +52,8 @@ private[almaren] case class HTTP(
   readTimeout: Int,
   threadPoolSize: Int,
   batchSize: Int,
-  maxRequestsTime: Long,
-  maxRequestsByTimeNum: Option[Long]) extends Main {
+  maxRequestsTime: Int,
+  maxRequestsByTimeNum: Option[Int]) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
@@ -189,8 +189,8 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
     batchSize: Int = 5000,
-    maxRequestsTime: Long = 60,
-    maxRequestsByTimeNum: Option[Long] = None): Option[Tree] =
+    maxRequestsTime: Int = 60,
+    maxRequestsByTimeNum: Option[Int] = None): Option[Tree] =
     HTTP(
       headers,
       params,

@@ -150,20 +150,20 @@ Output:
 
 #### Parameters
 
-| Parameter      | Description                                                                                                                | Type                                                             |
-|----------------|----------------------------------------------------------------------------------------------------------------------------|------------------------------------------------------------------|
-| headers        | HTTP headers                                                                                                               | Map[String,String]                                               |
-| params         | HTTP params                                                                                                                | Map[String,String]                                               |
-| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                         | Map[String,String]                                               |
-| method         | HTTP Method                                                                                                                | String                                                           |
+| Parameter      | Description                                                                                                                | Type                                                               |
+|----------------|----------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| headers        | HTTP headers                                                                                                               | Map[String,String]                                                 |
+| params         | HTTP params                                                                                                                | Map[String,String]                                                 |
+| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                         | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                                                | String                                                             |
 | requestHandler | Closure to handle HTTP request                                                                                             | (Row,Session,String,Map[String,String],String) => requests.Respons |
-| session        | Closure to handle HTTP sessions                                                                                            | () = requests.Session                                            |
-| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                                 | Int                                                              |
-| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                      | Int                                                              |
-| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize    | Int                                                              |
-| batchSize      | How many records a single thread will process                                                                              | Int                                                              |
-| maxRequestsTime      | Number of requests that will be executed within a time interval determined by the property maxRequestsByTimeNum | Long                                                       |
-| maxRequestsByTimeNum      | Determines the maximum number of maxRequestsByTime that should be executed within a specific time interval.                | Option[Long]                                                                 |
+| session        | Closure to handle HTTP sessions                                                                                            | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                                 | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                      | Int                                                                |
+| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize    | Int                                                                |
+| batchSize      | How many records a single thread will process                                                                              | Int                                                                |
+| maxRequestsTime      | Number of requests that will be executed within a time interval determined by the property maxRequestsByTimeNum | Int                                                                |
+| maxRequestsByTimeNum      | Determines the maximum number of maxRequestsByTime that should be executed within a specific time interval.                | Option[Int]                                                        |
 
 
 #### Special Columns
