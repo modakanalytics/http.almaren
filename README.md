@@ -162,8 +162,8 @@ Output:
 | readTimeout    | Maximum number of ms to perform a single HTTP request                                                                               | Int                                                                |
 | threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize             | Int                                                                |
 | batchSize      | How many records a single thread will process                                                                                       | Int                                                                |
-| maxTimeDuration      | time duration in secs to sleep the process after certain number of maxRequests throught the process in executors                    | Option[Long]                                                       |
-| maxRequests      | Max number request to sleep the process and resume again, default value is none unless it is provided will not execute this process | Option[Long]                                                                   |
+| maxRequestsTime      | time duration in secs to sleep the process after certain number of maxRequests throught the process in executors                    | Option[Long]                                                       |
+| maxRequestsByTimeSecs      | Max number request to sleep the process and resume again, default value is none unless it is provided will not execute this process | Option[Long]                                                                   |
 
 
 #### Special Columns

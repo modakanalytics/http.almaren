@@ -52,8 +52,8 @@ private[almaren] case class HTTP(
   readTimeout: Int,
   threadPoolSize: Int,
   batchSize: Int,
-  maxTimeDuration: Option[Long],
-  maxRequests: Option[Long]) extends Main {
+  maxRequestsTime: Option[Long],
+  maxRequestsByTimeSecs: Option[Long]) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
@@ -67,14 +67,14 @@ private[almaren] case class HTTP(
       val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
         rows.map(row => {
-          maxRequests.map(f = reqCount => {
+          maxRequestsByTimeSecs.map(reqCount => {
             if (accCount.value >= reqCount) {
               logger.info(s"Reached maximum requests in the connector value by ${reqCount}")
               accCount.reset()
             }
             if(accCount.value == 0) {
-              logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxTimeDuration.get}")
-              Thread.sleep(maxTimeDuration.get * 1000)
+              logger.info(s"Executor id: ${TaskContext.getPartitionId()} sleeping for request time : ${maxRequestsTime.get}")
+              Thread.sleep(maxRequestsTime.get * 1000)
               if (accCount.value == 0)
                 accCount.reset()
               accCount.add(1)
@@ -189,8 +189,8 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     threadPoolSize: Int = 1,
     batchSize: Int = 5000,
-    maxTimeDuration: Option[Long] = Some(60),
-    maxRequests: Option[Long] = None): Option[Tree] =
+    maxRequestsTime: Option[Long] = Some(60),
+    maxRequestsByTimeSecs: Option[Long] = None): Option[Tree] =
     HTTP(
       headers,
       params,
@@ -202,8 +202,8 @@ private[almaren] trait HTTPConnector extends Core {
       readTimeout,
       threadPoolSize,
       batchSize,
-      maxTimeDuration,
-      maxRequests
+      maxRequestsTime,
+      maxRequestsByTimeSecs
     )
 
   def httpBatch(
