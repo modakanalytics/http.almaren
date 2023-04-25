@@ -53,7 +53,7 @@ private[almaren] case class HTTP(
   threadPoolSize: Int,
   batchSize: Int,
   maxRequestsTime: Option[Long],
-  maxRequestsByTimeSecs: Option[Long]) extends Main {
+  maxRequestsByTimeNum: Option[Long]) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
@@ -67,7 +67,7 @@ private[almaren] case class HTTP(
       val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
         rows.map(row => {
-          maxRequestsByTimeSecs.map(reqCount => {
+          maxRequestsByTimeNum.map(reqCount => {
             if (accCount.value >= reqCount) {
               logger.info(s"Reached maximum requests in the connector value by ${reqCount}")
               accCount.reset()
@@ -190,7 +190,7 @@ private[almaren] trait HTTPConnector extends Core {
     threadPoolSize: Int = 1,
     batchSize: Int = 5000,
     maxRequestsTime: Option[Long] = Some(60),
-    maxRequestsByTimeSecs: Option[Long] = None): Option[Tree] =
+    maxRequestsByTimeNum: Option[Long] = None): Option[Tree] =
     HTTP(
       headers,
       params,
@@ -203,7 +203,7 @@ private[almaren] trait HTTPConnector extends Core {
       threadPoolSize,
       batchSize,
       maxRequestsTime,
-      maxRequestsByTimeSecs
+      maxRequestsByTimeNum
     )
 
   def httpBatch(
