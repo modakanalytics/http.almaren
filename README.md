@@ -162,7 +162,7 @@ Output:
 | readTimeout    | Maximum number of ms to perform a single HTTP request                                                                      | Int                                                                |
 | threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize    | Int                                                                |
 | batchSize      | How many records a single thread will process                                                                              | Int                                                                |
-| maxRequestsTime      | time duration in secs to sleep the process after certain number of maxRequestsByTimeSecs throught the process in executors | Option[Long]                                                       |
+| maxRequestsTime      | Number of requests that will be executed within a time interval determined by the property maxRequestsByTimeSecs | Option[Long]                                                       |
 | maxRequestsByTimeSecs      | Determines the maximum number of maxRequestsByTime that should be executed within a specific time interval.                | Option[Long]                                                                   |
 
 
