@@ -23,15 +23,15 @@ final case class Response(
                            `__URL__`: String)
 
 final case class ResponseBatch(
-                                `__ID__`: Seq[String],
-                                `__BODY__`: Option[String] = None,
-                                `__HEADER__`: Map[String, Seq[String]] = Map(),
-                                `__STATUS_CODE__`: Option[Int] = None,
-                                `__STATUS_MSG__`: Option[String] = None,
-                                `__ERROR__`: Option[String] = None,
-                                `__ELAPSED_TIME__`: Long,
-                                `__URL__`: String,
-                                `__DATA__`: String)
+  `__ID__`: Seq[String],
+  `__BODY__`: Option[String] = None,
+  `__HEADER__`: Map[String, Seq[String]] = Map(),
+  `__STATUS_CODE__`: Option[Int] = None,
+  `__STATUS_MSG__`: Option[String] = None,
+  `__ERROR__`: Option[String] = None,
+  `__ELAPSED_TIME__`: Long,
+  `__URL__`: String,
+  `__DATA__`: String)
 
 
 object Alias {
@@ -42,16 +42,16 @@ object Alias {
 
 
 private[almaren] case class HTTP(
-                                  headers: Map[String, String],
-                                  params: Map[String, String],
-                                  hiddenParams: Map[String, String],
-                                  method: String,
-                                  requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-                                  session: () => requests.Session,
-                                  connectTimeout: Int,
-                                  readTimeout: Int,
-                                  threadPoolSize: Int,
-                                  batchSize: Int) extends Main {
+  headers: Map[String, String],
+  params: Map[String, String],
+  hiddenParams: Map[String, String],
+  method: String,
+  requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
+  session: () => requests.Session,
+  connectTimeout: Int,
+  readTimeout: Int,
+  threadPoolSize: Int,
+  batchSize: Int) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
@@ -103,18 +103,18 @@ private[almaren] case class HTTP(
 }
 
 private[almaren] case class HTTPBatch(
-                                       url: String,
-                                       headers: Map[String, String],
-                                       params: Map[String, String],
-                                       hiddenParams: Map[String, String],
-                                       method: String,
-                                       requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-                                       session: () => requests.Session,
-                                       connectTimeout: Int,
-                                       readTimeout: Int,
-                                       batchSize: Int,
-                                       batchDelimiter: (Seq[Row]) => String
-                                     ) extends Main {
+    url: String,
+    headers: Map[String, String],
+    params: Map[String, String],
+    hiddenParams: Map[String, String],
+    method: String,
+    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
+    session: () => requests.Session,
+    connectTimeout: Int,
+    readTimeout: Int,
+    batchSize: Int,
+    batchDelimiter: (Seq[Row]) => String
+  ) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"url:{$url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
@@ -172,16 +172,16 @@ private[almaren] case class HTTPBatch(
 private[almaren] trait HTTPConnector extends Core {
 
   def http(
-            headers: Map[String, String] = Map(),
-            params: Map[String, String] = Map(),
-            hiddenParams: Map[String, String] = Map(),
-            method: String,
-            requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandler,
-            session: () => requests.Session = HTTPConn.defaultSession,
-            connectTimeout: Int = 60000,
-            readTimeout: Int = 1000,
-            threadPoolSize: Int = 1,
-            batchSize: Int = 5000): Option[Tree] =
+    headers: Map[String, String] = Map(),
+    params: Map[String, String] = Map(),
+    hiddenParams: Map[String, String] = Map(),
+    method: String,
+    requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandler,
+    session: () => requests.Session = HTTPConn.defaultSession,
+    connectTimeout: Int = 60000,
+    readTimeout: Int = 1000,
+    threadPoolSize: Int = 1,
+    batchSize: Int = 5000): Option[Tree] =
     HTTP(
       headers,
       params,
@@ -196,18 +196,18 @@ private[almaren] trait HTTPConnector extends Core {
     )
 
   def httpBatch(
-                 url: String,
-                 headers: Map[String, String] = Map(),
-                 params: Map[String, String] = Map(),
-                 hiddenParams: Map[String, String] = Map(),
-                 method: String,
-                 requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandlerBatch,
-                 session: () => requests.Session = HTTPConn.defaultSession,
-                 connectTimeout: Int = 60000,
-                 readTimeout: Int = 1000,
-                 batchSize: Int = 5000,
-                 batchDelimiter: (Seq[Row]) => String = HTTPConn.defaultBatchDelimiter
-               ): Option[Tree] =
+    url: String,
+    headers: Map[String, String] = Map(),
+    params: Map[String, String] = Map(),
+    hiddenParams: Map[String, String] = Map(),
+    method: String,
+    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandlerBatch,
+    session: () => requests.Session = HTTPConn.defaultSession,
+    connectTimeout: Int = 60000,
+    readTimeout: Int = 1000,
+    batchSize: Int = 5000,
+    batchDelimiter: (Seq[Row]) => String = HTTPConn.defaultBatchDelimiter
+  ): Option[Tree] =
     HTTPBatch(
       url,
       headers,
