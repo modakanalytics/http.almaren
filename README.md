@@ -49,6 +49,8 @@ repository. It can be used using the `--packages` option or the
 
 | version                    | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
+| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.4` |
+| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.4` |
 | Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.3` |
 | Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.3` |
 | Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.2` |
