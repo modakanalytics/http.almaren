@@ -13,14 +13,14 @@ import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 final case class Response(
-                           `__ID__`: String,
-                           `__BODY__`: Option[String] = None,
-                           `__HEADER__`: Map[String, Seq[String]] = Map(),
-                           `__STATUS_CODE__`: Option[Int] = None,
-                           `__STATUS_MSG__`: Option[String] = None,
-                           `__ERROR__`: Option[String] = None,
-                           `__ELAPSED_TIME__`: Long,
-                           `__URL__`: String)
+  `__ID__`: String,
+  `__BODY__`: Option[String] = None,
+  `__HEADER__`: Map[String, Seq[String]] = Map(),
+  `__STATUS_CODE__`: Option[Int] = None,
+  `__STATUS_MSG__`: Option[String] = None,
+  `__ERROR__`: Option[String] = None,
+  `__ELAPSED_TIME__`: Long,
+  `__URL__`: String)
 
 final case class ResponseBatch(
   `__ID__`: Seq[String],
