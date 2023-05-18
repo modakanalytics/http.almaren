@@ -6,7 +6,7 @@ import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
 import org.apache.spark.sql.{DataFrame, Row}
-import requests.Session
+import requests.{RequestFailedException, Session}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
@@ -66,32 +66,37 @@ private[almaren] case class HTTP(
         rows.map(row => request(row,s))
       })
       val requests:Future[Iterator[Seq[Response]]] = Future.sequence(data)
-      Await.result(requests,Duration.Inf).flatMap(s => s)
+      Await.result(requests, Duration.Inf).flatten
     })
     result.toDF
   }
 
   private def request(row:Row, session:Session): Response = {
-    val url = row.getAs[Any](Alias.UrlCol).toString()
+    val url = row.getAs[Any](Alias.UrlCol).toString
     val startTime = System.currentTimeMillis()
     val response = Try(requestHandler(row,session,url,headers,params ++ hiddenParams,method,connectTimeout,readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
-    val id = row.getAs[Any](Alias.IdCol).toString()
+    val id = row.getAs[Any](Alias.IdCol).toString
+
+    def getResponse(r: requests.Response) = Response(
+      id,
+      Some(r.text()),
+      r.headers,
+      Some(r.statusCode),
+      r.statusMessage match {
+        case null => None
+        case _ => Some(r.statusMessage)
+      },
+      `__ELAPSED_TIME__` = elapsedTime,
+      `__URL__` = url
+    )
+
     response match {
-      case Success(r) => Response(
-        id,
-        Some(r.text()),
-        r.headers,
-        Some(r.statusCode),
-        r.statusMessage match {
-          case null => None
-          case _ => Some(r.statusMessage)
-        },
-        `__ELAPSED_TIME__` = elapsedTime,
-        `__URL__` = url)
+      case Success(r) => getResponse(r)
+      case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
       }
     }
   }
@@ -121,25 +126,29 @@ private[almaren] case class HTTPBatch(
         val s = session()
         val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
+
+        def getResponse(r: requests.Response) = ResponseBatch(
+          rows.map(row => row.getAs[Any](Alias.IdCol).toString),
+          Some(r.text()),
+          r.headers,
+          Some(r.statusCode),
+          r.statusMessage match {
+            case null => None
+            case _ => Some(r.statusMessage)
+          },
+          `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+          `__URL__` = url,
+          `__DATA__` = data
+        )
+
         Try{request(data,s)} match {
-          case Success(r) => ResponseBatch(
-            rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
-            Some(r.text()),
-            r.headers,
-            Some(r.statusCode),
-            r.statusMessage match {
-              case null => None
-              case _ => Some(r.statusMessage)
-            },
-            `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-            `__URL__` = url,
-            `__DATA__` = data
-          )
+          case Success(r) => getResponse(r)
+          case Failure(re: RequestFailedException) => getResponse(re.response)
           case Failure(f) => {
             logger.error("Almaren HTTP Batch Request Error", f)
             ResponseBatch(
-              rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
-              `__ERROR__` = Some(f.getMessage()),
+              rows.map(row => row.getAs[Any](Alias.IdCol).toString),
+              `__ERROR__` = Some(f.getMessage),
               `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
               `__URL__` = url,
               `__DATA__` = data
