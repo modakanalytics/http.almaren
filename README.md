@@ -4,13 +4,13 @@
 
 To add http.almaren  dependency to your sbt build:
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.6-3.3"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.7-3.4"
 ```
 
 To run in spark-shell:
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.3,com.github.music-of-the-ainur:almaren-framework_2.12:0.9.8-3.3"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.4,com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.4"
 ```
 
 ## Table of Contents
@@ -45,12 +45,14 @@ repository. It can be used using the `--packages` option or the
 
 | version                    | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
-| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.6-3.3` |
-| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.3` |
-| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.2` |
-| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-3.1` |
-| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.6-2.4` |
-| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.6-2.4` |
+| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.4` |
+| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.4` |
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.7-2.4` |
 
 
 ## Methods
