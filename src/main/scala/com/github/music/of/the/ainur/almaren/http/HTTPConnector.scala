@@ -6,32 +6,32 @@ import com.github.music.of.the.ainur.almaren.Tree
 import com.github.music.of.the.ainur.almaren.builder.Core
 import com.github.music.of.the.ainur.almaren.state.core.Main
 import org.apache.spark.sql.{DataFrame, Row}
-import requests.Session
+import requests.{RequestFailedException, Session}
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
 final case class Response(
-  `__ID__`:String,
-  `__BODY__`:Option[String] = None,
-  `__HEADER__`:Map[String,Seq[String]] = Map(),
-  `__STATUS_CODE__`:Option[Int] = None,
-  `__STATUS_MSG__`:Option[String] = None,
-  `__ERROR__`:Option[String] = None,
-  `__ELAPSED_TIME__`:Long,
-   `__URL__`:String)
+  `__ID__`: String,
+  `__BODY__`: Option[String] = None,
+  `__HEADER__`: Map[String, Seq[String]] = Map(),
+  `__STATUS_CODE__`: Option[Int] = None,
+  `__STATUS_MSG__`: Option[String] = None,
+  `__ERROR__`: Option[String] = None,
+  `__ELAPSED_TIME__`: Long,
+  `__URL__`: String)
 
 final case class ResponseBatch(
-  `__ID__`:Seq[String],
-  `__BODY__`:Option[String] = None,
-  `__HEADER__`:Map[String,Seq[String]] = Map(),
-  `__STATUS_CODE__`:Option[Int] = None,
-  `__STATUS_MSG__`:Option[String] = None,
-  `__ERROR__`:Option[String] = None,
-  `__ELAPSED_TIME__`:Long,
-   `__URL__`:String,
-  `__DATA__`:String)
+  `__ID__`: Seq[String],
+  `__BODY__`: Option[String] = None,
+  `__HEADER__`: Map[String, Seq[String]] = Map(),
+  `__STATUS_CODE__`: Option[Int] = None,
+  `__STATUS_MSG__`: Option[String] = None,
+  `__ERROR__`: Option[String] = None,
+  `__ELAPSED_TIME__`: Long,
+  `__URL__`: String,
+  `__DATA__`: String)
 
 
 object Alias {
@@ -60,56 +60,61 @@ private[almaren] case class HTTP(
 
     val result = df.mapPartitions(partition => {
 
-      implicit val ec:ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-      val data:Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
+      implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
+      val data: Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
-        rows.map(row => request(row,s))
+        rows.map(row => request(row, s))
       })
-      val requests:Future[Iterator[Seq[Response]]] = Future.sequence(data)
-      Await.result(requests,Duration.Inf).flatMap(s => s)
+      val requests: Future[Iterator[Seq[Response]]] = Future.sequence(data)
+      Await.result(requests, Duration.Inf).flatten
     })
     result.toDF
   }
 
-  private def request(row:Row, session:Session): Response = {
-    val url = row.getAs[Any](Alias.UrlCol).toString()
+  private def request(row: Row, session: Session): Response = {
+    val url = row.getAs[Any](Alias.UrlCol).toString
     val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row,session,url,headers,params ++ hiddenParams,method,connectTimeout,readTimeout))
+    val response = Try(requestHandler(row, session, url, headers, params ++ hiddenParams, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
-    val id = row.getAs[Any](Alias.IdCol).toString()
+    val id = row.getAs[Any](Alias.IdCol).toString
+
+    def getResponse(r: requests.Response) = Response(
+      id,
+      Some(r.text()),
+      r.headers,
+      Some(r.statusCode),
+      r.statusMessage match {
+        case null => None
+        case _ => Some(r.statusMessage)
+      },
+      `__ELAPSED_TIME__` = elapsedTime,
+      `__URL__` = url
+    )
+
     response match {
-      case Success(r) => Response(
-        id,
-        Some(r.text()),
-        r.headers,
-        Some(r.statusCode),
-        r.statusMessage match {
-          case null => None
-          case _ => Some(r.statusMessage)
-        },
-        `__ELAPSED_TIME__` = elapsedTime,
-        `__URL__` = url)
+      case Success(r) => getResponse(r)
+      case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage()), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
       }
     }
   }
 }
 
 private[almaren] case class HTTPBatch(
-  url: String,
-  headers: Map[String, String],
-  params: Map[String, String],
-  hiddenParams: Map[String, String],
-  method: String,
-  requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-  session: () => requests.Session,
-  connectTimeout: Int,
-  readTimeout: Int,
-  batchSize: Int,
-  batchDelimiter: (Seq[Row]) => String
-) extends Main {
+    url: String,
+    headers: Map[String, String],
+    params: Map[String, String],
+    hiddenParams: Map[String, String],
+    method: String,
+    requestHandler: (String, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
+    session: () => requests.Session,
+    connectTimeout: Int,
+    readTimeout: Int,
+    batchSize: Int,
+    batchDelimiter: (Seq[Row]) => String
+  ) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"url:{$url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
@@ -121,30 +126,36 @@ private[almaren] case class HTTPBatch(
         val s = session()
         val data = batchDelimiter(rows)
         val startTime = System.currentTimeMillis()
-        Try{request(data,s)} match {
-          case Success(r) => ResponseBatch(
-            rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
-            Some(r.text()),
-            r.headers,
-            Some(r.statusCode),
-            r.statusMessage match {
-              case null => None
-              case _ => Some(r.statusMessage)
-            },
-            `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
-            `__URL__` = url,
-            `__DATA__` = data
-          )
+
+        def getResponse(r: requests.Response) = ResponseBatch(
+          rows.map(row => row.getAs[Any](Alias.IdCol).toString),
+          Some(r.text()),
+          r.headers,
+          Some(r.statusCode),
+          r.statusMessage match {
+            case null => None
+            case _ => Some(r.statusMessage)
+          },
+          `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
+          `__URL__` = url,
+          `__DATA__` = data
+        )
+
+        Try {
+          request(data, s)
+        } match {
+          case Success(r) => getResponse(r)
+          case Failure(re: RequestFailedException) => getResponse(re.response)
           case Failure(f) => {
             logger.error("Almaren HTTP Batch Request Error", f)
             ResponseBatch(
-              rows.map(row => row.getAs[Any](Alias.IdCol).toString()),
-              `__ERROR__` = Some(f.getMessage()),
+              rows.map(row => row.getAs[Any](Alias.IdCol).toString),
+              `__ERROR__` = Some(f.getMessage),
               `__ELAPSED_TIME__` = System.currentTimeMillis() - startTime,
               `__URL__` = url,
               `__DATA__` = data
             )
-            
+
           }
         }
       })
@@ -152,8 +163,8 @@ private[almaren] case class HTTPBatch(
     result.toDF
   }
 
-  private def request(data:String, session:Session): requests.Response = 
-    requestHandler(data,session,url,headers,params ++ hiddenParams,method,connectTimeout,readTimeout)
+  private def request(data: String, session: Session): requests.Response =
+    requestHandler(data, session, url, headers, params ++ hiddenParams, method, connectTimeout, readTimeout)
 
 
 }
@@ -213,7 +224,7 @@ private[almaren] trait HTTPConnector extends Core {
 }
 
 object HTTPConn {
-  val defaultHandler = (row:Row, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
+  val defaultHandler = (row: Row, session: Session, url: String, headers: Map[String, String], params: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
     method.toUpperCase match {
       case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
       case "DELETE" => session.delete(url, headers = headers, params = params, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
@@ -225,7 +236,7 @@ object HTTPConn {
     }
   }
 
-  val defaultHandlerBatch = (data:String, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
+  val defaultHandlerBatch = (data: String, session: Session, url: String, headers: Map[String, String], params: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
     method.toUpperCase match {
       case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
       case "DELETE" => session.delete(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
@@ -237,7 +248,7 @@ object HTTPConn {
     }
   }
 
-  val defaultBatchDelimiter = (rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
+  val defaultBatchDelimiter = (rows: Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 
   val defaultSession = () => requests.Session()
 
