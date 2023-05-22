@@ -98,7 +98,7 @@ private[almaren] case class HTTP(
       case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url, `__DATA__` = data)
       }
     }
   }
