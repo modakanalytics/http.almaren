@@ -20,7 +20,8 @@ final case class Response(
   `__STATUS_MSG__`: Option[String] = None,
   `__ERROR__`: Option[String] = None,
   `__ELAPSED_TIME__`: Long,
-  `__URL__`: String)
+  `__URL__`: String,
+  `__DATA__`: String)
 
 final case class ResponseBatch(
   `__ID__`: Seq[String],
@@ -77,7 +78,7 @@ private[almaren] case class HTTP(
     val response = Try(requestHandler(row, session, url, headers, params ++ hiddenParams, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString
-
+    val data = row.getAs[Any](Alias.DataCol).toString
     def getResponse(r: requests.Response) = Response(
       id,
       Some(r.text()),
@@ -88,7 +89,8 @@ private[almaren] case class HTTP(
         case _ => Some(r.statusMessage)
       },
       `__ELAPSED_TIME__` = elapsedTime,
-      `__URL__` = url
+      `__URL__` = url,
+      `__DATA__` = data
     )
 
     response match {
@@ -96,7 +98,7 @@ private[almaren] case class HTTP(
       case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url,`__DATA__` = data)
       }
     }
   }
