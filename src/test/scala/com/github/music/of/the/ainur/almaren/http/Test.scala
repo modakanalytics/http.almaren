@@ -158,16 +158,13 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   })
 
   val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
-  requestDataframe.show(false)
 
-  getHttpRowDf(requestDataframe, "POST", isSession = true).show(false)
-  getHttpRowDf(requestDataframe, "POST", isSession = false).show(false)
 
   val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
   val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
 
-  test(postSessionRowDf, getHttpRowDf(requestDataframe, "POST", isSession = true), "POST ROW with Session")
-  test(postSessionRowDf, getHttpRowDf(requestDataframe, "POST", isSession = false), "POST ROW without Session")
+  test(postSessionRowDf, getHttpRowDf(requestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
+  test(postRowDf, getHttpRowDf(requestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
 
   def getHttpRowDf(df: DataFrame, methodType: String, isSession: Boolean): DataFrame = {
 
