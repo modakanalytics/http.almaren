@@ -159,6 +159,8 @@ class Test extends AnyFunSuite with BeforeAndAfter {
 
   val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
 
+  //  getHttpRowDf(requestDataframe, "POST", isSession = true).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowSession.parquet")
+  //  getHttpRowDf(requestDataframe, "POST", isSession = false).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowWithoutSession.parquet")
 
   val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
   val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
@@ -194,8 +196,7 @@ class Test extends AnyFunSuite with BeforeAndAfter {
           |status_code$status_code:IntegerType""".stripMargin
       ).alias("TABLE2")
       .sql(
-        """select T.__ID__ as id ,
-           full_name ,
+        """select full_name ,
            country
            age,
            salary,
