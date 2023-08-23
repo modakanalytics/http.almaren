@@ -2,23 +2,20 @@
 
 [![Build Status](https://github.com/modakanalytics/http.almaren/actions/workflows/http-almaren-githubactions.yml/badge.svg)](https://github.com/modakanalytics/http.almaren/actions/workflows/http-almaren-githubactions.yml)
 
-To add http.almaren  dependency to your sbt build:
+To add http.almaren dependency to your sbt build:
+
 ```
 libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.7-3.3"
 ```
 
 To run in spark-shell:
-For scala-version(2.12):
+
 ```
 spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.3"
 ```
-For scala-version(2.13):
-```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.13:0.9.9-3.3,com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.3"
-```
 
 ## Table of Contents
-- [Maven / Ivy Package Usage](#maven--ivy-package-usage)
+
 - [Methods](#methods)
   * [HTTP](#http)
     + [Example](#example)
@@ -39,15 +36,20 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
     + [Request Handler Batch](#request-handler-batch)
       - [Batch Delimiter](#batch-delimiter)
       - [Examples](#examples)
+  * [HTTP Row](#http-row)
+    + [Example](#example-2)
+    + [Parameters](#parameters-2)
+    + [Special Columns](#special-columns-2)
+      - [Input:](#input-2)
+      - [Output:](#output-2)
+    + [Methods](#methods-3)
+    + [Session](#session-1)
+    + [Request Handler](#request-handler-1)
 
+HTTP Connector is available in [Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
+repository.
 
-#### Maven / Ivy Package Usage
-The connector is also available from the
-[Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
-repository. It can be used using the `--packages` option or the
-`spark.jars.packages` configuration property. Use the following value
-
-| version                    | Connector Artifact                                          |
+| versions                   | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
 | Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.4` |
 | Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.4` |
@@ -57,7 +59,6 @@ repository. It can be used using the `--packages` option or the
 | Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.1` |
 | Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-2.4` |
 | Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.7-2.4` |
-
 
 ## Methods
 
@@ -85,13 +86,13 @@ import spark.implicits._
 
 // Generating table "USER_DATA"
 
-case class Data(firstName:String, lastName:String, age:Int, code:Long)
+case class Data(firstName: String, lastName: String, age: Int, code: Long)
 
-List(Data("Roger","Laura",25,2342324232L),
-    Data("Robert","Dickson",88,3218313131L),
-    Data("Daniel","Pedro",28,32323232L))
-    .toDS
-    .createOrReplaceTempView("USER_DATA")
+List(Data("Roger", "Laura", 25, 2342324232L),
+  Data("Robert", "Dickson", 88, 3218313131L),
+  Data("Daniel", "Pedro", 28, 32323232L))
+  .toDS
+  .createOrReplaceTempView("USER_DATA")
 
 
 // Don't infer the schema manually, just follow the steps:
@@ -102,15 +103,17 @@ val httpOutpustSchema = Some("`data` STRING,`headers` STRUCT<`Accept`: STRING, `
 
 
 val df = almaren.builder
-    .sourceSql("SELECT uuid() as id,* FROM USER_DATA").alias("DATA")
-    .sql("""SELECT 
+  .sourceSql("SELECT uuid() as id,* FROM USER_DATA").alias("DATA")
+  .sql(
+    """SELECT 
                 id as __ID__,
                 concat('http://httpbin.org/anything/person/',code) as __URL__,
                 to_json(named_struct('data',named_struct('name',firstName + " " + lastName))) as __DATA__ 
             FROM DATA""")
-    .http(method = "POST", threadPoolSize = 10, batchSize = 10000)
-    .deserializer("JSON","__BODY__",httpOutpustSchema).alias("TABLE")
-    .sql("""SELECT
+  .http(method = "POST", threadPoolSize = 10, batchSize = 10000)
+  .deserializer("JSON", "__BODY__", httpOutpustSchema).alias("TABLE")
+  .sql(
+    """SELECT
                 T.origin,
                 D.firstName,
                 D.lastName,D.age,
@@ -119,12 +122,13 @@ val df = almaren.builder
                 T.__ERROR__ as error,
                 T.__ELAPSED_TIME__ as request_time
             FROM TABLE T JOIN DATA D ON d.id = t.__ID__""")
-    .batch
+  .batch
 
 df.show(false)
 ```
 
 Output:
+
 ```
 20/10/15 01:04:32 INFO SourceSql: sql:{SELECT uuid() as id,* FROM USER_DATA}
 20/10/15 01:04:33 INFO Alias: {DATA}
@@ -169,7 +173,6 @@ Output:
 | threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
 | batchSize      | How many records a single thread will process                                                                           | Int                                                                |
 
-
 #### Special Columns
 
 ##### Input:
@@ -178,14 +181,13 @@ Output:
 |--------------|-----------|------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
 | \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
-| \_\_DATA\_\_ | No        | Data Content, used in POST/PUT Method HTTP requests    |
-
+| \_\_DATA\_\_ | No        | Data Content, used in POST/PUT Method HTTP requests                                |
 
 ##### Output:
 
 | Parameters           | Description                                        |
 |----------------------|----------------------------------------------------|
-| \_\_ID\_\_       | Custom ID , This field will be useful to join data |
+| \_\_ID\_\_           | Custom ID , This field will be useful to join data |
 | \_\_BODY\_\_         | HTTP response                                      |
 | \_\_HEADER\_\_       | HTTP header                                        |
 | \_\_STATUS_CODE\_\_  | HTTP response code                                 |
@@ -209,17 +211,16 @@ The following methods are supported:
 You can give an existing [session](https://github.com/lihaoyi/requests-scala#sessions) to the HTTP component.
 To see all details check the [documentation](https://github.com/lihaoyi/requests-scala#sessions)
 
-
 ```scala
 val newSession = () => {
-    val s = requests.Session(headers = Map("Custom-header" -> "foo"))
-    s.post("https://bar.com/login",data = Map("user" -> "baz", "password" -> "123"))
-    s
+  val s = requests.Session(headers = Map("Custom-header" -> "foo"))
+  s.post("https://bar.com/login", data = Map("user" -> "baz", "password" -> "123"))
+  s
 }
 
 almaren.builder
-    .sourceSql("SELECT concat('http://localhost:3000/user/',first_name,last_name,'/',country) as __URL__,id as __ID__")
-    .http(method = "GET", session = newSession)
+  .sourceSql("SELECT concat('http://localhost:3000/user/',first_name,last_name,'/',country) as __URL__,id as __ID__")
+  .http(method = "GET", session = newSession)
 
 ```
 
@@ -229,26 +230,27 @@ You can overwrite the default _requestHandler_ closure to give any custom HTTP R
 
 ```scala
 
-val customHandler = (row:Row,session:Session,url:String, headers:Map[String,String], method:String,connectTimeout:Int, readTimeout:Int) => {
-    method.toUpperCase match {
-      case "GET" => session.get(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "DELETE" => session.delete(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "OPTIONS" => session.options(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "HEAD" => session.head(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "POST" => session.post(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "PUT" => session.put(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case method => throw new Exception(s"Invalid Method: $method")
-    }
+val customHandler = (row: Row, session: Session, url: String, headers: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
+  method.toUpperCase match {
+    case "GET" => session.get(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "DELETE" => session.delete(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "OPTIONS" => session.options(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "HEAD" => session.head(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "POST" => session.post(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "PUT" => session.put(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case method => throw new Exception(s"Invalid Method: $method")
+  }
 }
-     
+
 almaren.builder
-    .sql("...")
-    .http(method = "POST", requestHandler = customHandler)
+  .sql("...")
+  .http(method = "POST", requestHandler = customHandler)
 ```
 
 ### HTTP Batch
 
-Is used to perform a single HTTP request with a batch of data. You can choose how to create the batch data using the `batchDelimiter` closure. 
+Is used to perform a single HTTP request with a batch of data. You can choose how to create the batch data using
+the `batchDelimiter` closure.
 The default behavior is to concatenate by new line.
 
 ```
@@ -259,7 +261,7 @@ $ curl -X PUT -H "Authorization: {SESSION_ID}" \
 https://localhost/objects/documents/batch
 ```
 
-#### Example 
+#### Example
 
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
@@ -268,20 +270,21 @@ import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 
 import spark.implicits._
 
-  val httpBatchDf = almaren.builder
-    .sourceDataFrame(df)
-    .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
-    .httpBatch(
-      url = "http://127.0.0.1:3000/batchAPI",
-      method = "POST",
-      batchSize = 3,
-      batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
-    .batch
+val httpBatchDf = almaren.builder
+  .sourceDataFrame(df)
+  .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+  .httpBatch(
+    url = "http://127.0.0.1:3000/batchAPI",
+    method = "POST",
+    batchSize = 3,
+    batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+  .batch
 
 httpBatchDf.show(false)
 ```
 
 Output:
+
 ```
 21/06/09 17:52:20 INFO SourceDataFrame:
 21/06/09 17:52:20 INFO SqlExpr: exprs:{to_json(struct(*)) as __DATA__
@@ -312,7 +315,6 @@ monotonically_increasing_id() as __ID__}
 | batchSize      | Number of records sent in a single HTTP transaction                                        | Int                                                                |
 | batchDelimiter | Closure used to determine how the batch data will be created                               | (Seq[Row]) => String                                               |
 
-
 #### Special Columns
 
 ##### Input:
@@ -320,21 +322,19 @@ monotonically_increasing_id() as __ID__}
 | Parameters   | Mandatory | Description                                                                                                |
 |--------------|-----------|------------------------------------------------------------------------------------------------------------|
 | \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component which is array[string] , it's useful to join data |
-| \_\_DATA\_\_ | Yes       | Data Content, used in POST/PUT Method HTTP requests|
-
+| \_\_DATA\_\_ | Yes       | Data Content, used in POST/PUT Method HTTP requests                                                        |
 
 ##### Output:
 
-| Parameters           | Description                                                                       |
-|----------------------|-----------------------------------------------------------------------------------|
-| \_\_ID\_\_           | Custom ID , This field will be useful to join data which is of type array[string] |
-| \_\_BODY\_\_         | HTTP response                                                                     |
-| \_\_HEADER\_\_       | HTTP header                                                                       |
-| \_\_STATUS_CODE\_\_  | HTTP response code                                                                |
-| \_\_STATUS_MSG\_\_   | HTTP response message                                                             |
-| \_\_ERROR\_\_        | Java Exception                                                                    |
-| \_\_DATA\_\_         | Payload (Data content) sent to each batch API request                                                              |
-
+| Parameters          | Description                                                                       |
+|---------------------|-----------------------------------------------------------------------------------|
+| \_\_ID\_\_          | Custom ID , This field will be useful to join data which is of type array[string] |
+| \_\_BODY\_\_        | HTTP response                                                                     |
+| \_\_HEADER\_\_      | HTTP header                                                                       |
+| \_\_STATUS_CODE\_\_ | HTTP response code                                                                |
+| \_\_STATUS_MSG\_\_  | HTTP response message                                                             |
+| \_\_ERROR\_\_       | Java Exception                                                                    |
+| \_\_DATA\_\_        | Payload (Data content) sent to each batch API request                             |
 
 #### Methods
 
@@ -353,27 +353,28 @@ You can overwrite the default `_requestHandlerBatch_` closure to give any custom
 
 ```scala
 
-  val customHandlerBatch = (data:String, session:Session, url:String, headers:Map[String, String], params:Map[String, String], method:String, connectTimeout:Int, readTimeout:Int) => {
-    method.toUpperCase match {
-      case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "OPTIONS" => session.options(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "HEAD" => session.head(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "POST" => session.post(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case "PUT" => session.put(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
-      case method => throw new Exception(s"Invalid Method: $method")
-    }
+val customHandlerBatch = (data: String, session: Session, url: String, headers: Map[String, String], params: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
+  method.toUpperCase match {
+    case "GET" => session.get(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "DELETE" => session.delete(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "OPTIONS" => session.options(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "HEAD" => session.head(url, headers = headers, params = params, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "POST" => session.post(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "PUT" => session.put(url, headers = headers, params = params, data = data, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case method => throw new Exception(s"Invalid Method: $method")
   }
-     
+}
+
 almaren.builder
-    .sql("...")
-    .httpBatch(method = "POST", requestHandler = customHandlerBatch)
+  .sql("...")
+  .httpBatch(method = "POST", requestHandler = customHandlerBatch)
 ```
 
 ##### Batch Delimiter
 
 Is a closure used to determine how the batch data will be created. The default behavior is to concatenate by new line.
-Example, if your `__DATA__` column has string by row. It will create a batch where the number of lines is defined by the `batchSize` parameter:
+Example, if your `__DATA__` column has string by row. It will create a batch where the number of lines is defined by
+the `batchSize` parameter:
 
 ```
 foo
@@ -382,16 +383,218 @@ baz
 ...
 ```
 
-##### Examples 
+##### Examples
 
-If the `__DATA__` column is a JSON string `{foo:"bar"}` where you need to convert to an array of JSON `[{foo:"bar"},{foo:"baz"}}`:
+If the `__DATA__` column is a JSON string `{foo:"bar"}` where you need to convert to an array of
+JSON `[{foo:"bar"},{foo:"baz"}}`:
 
 ```scala
-(rows:Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+(rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]"""
+)
 ```
 
 How to concatenate by new line:
 
 ```scala
-(rows:Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
+(rows: Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
+```
+
+### HTTP Row
+
+It will initiate an HTTP request for each Row, extracting headers, parameters, and hidden parameters from each Row.
+
+```
+$ curl -X PUT -H "Authorization: {SESSION_ID}" \
+-H "Content-Type: text/csv" \
+-H "Accept: text/csv" \
+--data-binary @"filename" \
+https://localhost/objects/documents/batch
+```
+
+#### Example
+
+```scala
+  import com.github.music.of.the.ainur.almaren.Almaren
+  import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
+  import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
+  import org.apache.spark.sql.Row
+  import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
+  import scala.collection.JavaConverters.asScalaIteratorConverter
+  import spark.implicits._
+  
+  val almaren = Almaren("http-almaren")
+  
+  val df = Seq(
+    ("John", "Smith", "London"),
+    ("David", "Jones", "India"),
+    ("Michael", "Johnson", "Indonesia"),
+    ("Chris", "Lee", "Brazil"),
+    ("Mike", "Brown", "Russia")
+  ).toDF("first_name", "last_name", "country").coalesce(1)
+  
+  df.createOrReplaceTempView("person_info")
+  val requestSchema = StructType(Seq(
+    StructField("__URL__", StringType),
+    StructField("__DATA__", StringType),
+    StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
+    StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
+    StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
+  ))
+  
+  //Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
+  val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
+    val firstName = row.getAs[String]("first_name")
+    val lastName = row.getAs[String]("last_name")
+    val country = row.getAs[String]("country")
+    val url = s"http://localhost:3000/fireshots/getInfo"
+    val headers = scala.collection.mutable.Map[String, String]()
+    headers.put("data", firstName)
+    val params = scala.collection.mutable.Map[String, String]()
+    params.put("params", lastName)
+    val hiddenParams = scala.collection.mutable.Map[String, String]()
+    hiddenParams.put("hidden_params", country)
+  
+    Row(url,
+      s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
+      headers,
+      params,
+      hiddenParams
+    )
+  })
+  
+  val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
+  
+  
+  val responseDf = almaren.builder
+    .sourceDataFrame(requestDataframe)
+    .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+    .httpRow(method = "POST")
+    .batch
+  
+  responseDf.show(false)
+```
+
+Output:
+
+```
+23/08/22 13:08:35 INFO SourceDataFrame: 
+23/08/22 13:08:35 INFO SqlExpr: exprs:{monotonically_increasing_id() as __ID__
+__DATA__
+__URL__
+__REQUEST_HEADERS__
+__REQUEST_PARAMS__
+__REQUEST_HIDDEN_PARAMS__}
+23/08/22 13:08:35 INFO HTTPRow: method:{POST}, connectTimeout:{60000}, readTimeout{1000}, threadPoolSize:{1}, batchSize:{5000}
+23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> John)},params:{Map(params -> Smith)}
+23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Chris)},params:{Map(params -> Lee)}
+23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Michael)},params:{Map(params -> Johnson)}
+23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> David)},params:{Map(params -> Jones)}
+23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Mike)},params:{Map(params -> Brown)}
+
++-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
+|__ID__     |__BODY__                                                                             |__HEADER__                                                                                                                                         |__STATUS_CODE__|__STATUS_MSG__|__ERROR__|__ELAPSED_TIME__|__URL__                                |__DATA__                                                               |__REQUEST_HEADERS__|__REQUEST_PARAMS__ |__REQUEST_HIDDEN_PARAMS__   |
++-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
+|8589934592 |{"data":{"age":25,"country":"London","full_name":"JohnSmith","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |8               |http://localhost:3000/fireshots/getInfo|{"first_name" : "John","last_name":"Smith","country":"London"}         |{data -> John}     |{params -> Smith}  |{hidden_params -> London}   |
+|25769803776|{"data":{"age":25,"country":"India","full_name":"DavidJones","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |8               |http://localhost:3000/fireshots/getInfo|{"first_name" : "David","last_name":"Jones","country":"India"}         |{data -> David}    |{params -> Jones}  |{hidden_params -> India}    |
+|34359738368|{"data":{"age":25,"country":"Indonesia","full_name":"MichaelJohnson","salary":25000}}|{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [85]}|200            |OK            |null     |10              |http://localhost:3000/fireshots/getInfo|{"first_name" : "Michael","last_name":"Johnson","country":"Indonesia"} |{data -> Michael}  |{params -> Johnson}|{hidden_params -> Indonesia}|
+|51539607552|{"data":{"age":25,"country":"Brazil","full_name":"ChrisLee","salary":25000}}         |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [76]}|200            |OK            |null     |3               |http://localhost:3000/fireshots/getInfo|{"first_name" : "Chris","last_name":"Lee","country":"Brazil"}          |{data -> Chris}    |{params -> Lee}    |{hidden_params -> Brazil}   |
+|60129542144|{"data":{"age":25,"country":"Russia","full_name":"MikeBrown","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |4               |http://localhost:3000/fireshots/getInfo|{"first_name" : "Mike","last_name":"Brown","country":"Russia"}         |{data -> Mike}     |{params -> Brown}  |{hidden_params -> Russia}   |
++-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
+``` 
+
+#### Parameters
+
+| Parameter      | Description                                                                                                             | Type                                                               |
+|----------------|-------------------------------------------------------------------------------------------------------------------------|--------------------------------------------------------------------|
+| headers        | HTTP headers                                                                                                            | Map[String,String]                                                 |
+| params         | HTTP params                                                                                                             | Map[String,String]                                                 |
+| hiddenParams   | HTTP params which are hidden (not exposed in logs)                                                                      | Map[String,String]                                                 |
+| method         | HTTP Method                                                                                                             | String                                                             |
+| requestHandler | Closure to handle HTTP request                                                                                          | (Row,Session,String,Map[String,String],String) => requests.Respons |
+| session        | Closure to handle HTTP sessions                                                                                         | () = requests.Session                                              |
+| connectTimeout | Timeout in ms to keep the connection keep-alive, it's recommended to keep this number high                              | Int                                                                |
+| readTimeout    | Maximum number of ms to perform a single HTTP request                                                                   | Int                                                                |
+| threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
+| batchSize      | How many records a single thread will process                                                                           | Int                                                                |
+
+#### Special Columns
+
+##### Input:
+
+| Parameters                    | Mandatory | Description                                                                        | Column Type        |
+|-------------------------------|-----------|------------------------------------------------------------------------------------|--------------------|
+| \_\_ID\_\_                    | Yes       | This field will be in response of http.almaren component, it's useful to join data | String             |
+| \_\_URL\_\_                   | Yes       | Used to perform the HTTP request                                                   | String             |
+| \_\_DATA\_\_                  | No        | Data Content, used in POST/PUT Method HTTP requests                                | String             |
+| \_\_REQUEST_HEADERS\_\_       | Yes       | HTTP headers                                                                       | Map[String,String] |
+| \_\_REQUEST_PARAMS\_\_        | Yes       | HTTP params                                                                        | Map[String,String] |
+| \_\_REQUEST_HIDDEN_PARAMS\_\_ | Yes       | HTTP params which are hidden (not exposed in logs)                                 | Map[String,String] |
+
+##### Output:
+
+| Parameters                    | Description                                                |
+|-------------------------------|------------------------------------------------------------|
+| \_\_ID\_\_                    | Custom ID , This field will be useful to join data         |
+| \_\_BODY\_\_                  | HTTP response                                              |
+| \_\_HEADER\_\_                | HTTP response header                                       |
+| \_\_STATUS_CODE\_\_           | HTTP response code                                         |
+| \_\_STATUS_MSG\_\_            | HTTP response message                                      |
+| \_\_ERROR\_\_                 | Java Exception                                             |
+| \_\_ELAPSED_TIME\_\_          | Request time in ms                                         |
+| \_\_URL\_\_                   | HTTP request URL                                           |
+| \_\_DATA\_\_                  | Data Content, used in POST/PUT Method HTTP requests        |
+| \_\_REQUEST_HEADERS\_\_       | HTTP Request headers                                       |
+| \_\_REQUEST_PARAMS\_\_        | HTTP Request params                                        |
+| \_\_REQUEST_HIDDEN_PARAMS\_\_ | HTTP Request params which are hidden (not exposed in logs) |
+
+#### Methods
+
+The following methods are supported:
+
+- POST
+- GET
+- HEAD
+- OPTIONS
+- DELETE
+- PUT
+
+#### Session
+
+You can give an existing [session](https://github.com/lihaoyi/requests-scala#sessions) to the HTTP component.
+To see all details check the [documentation](https://github.com/lihaoyi/requests-scala#sessions)
+
+```scala
+val newSession = () => {
+  val s = requests.Session(headers = Map("Custom-header" -> "foo"))
+  s.post("https://bar.com/login", data = Map("user" -> "baz", "password" -> "123"))
+  s
+}
+
+almaren.builder
+  .sourceSql("....")
+  .httpRow(method = "GET", session = newSession)
+
+```
+
+#### Request Handler
+
+You can overwrite the default _requestHandler_ closure to give any custom HTTP Request.
+
+```scala
+
+val customHandler = (row: Row, session: Session, url: String, headers: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
+  method.toUpperCase match {
+    case "GET" => session.get(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "DELETE" => session.delete(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "OPTIONS" => session.options(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "HEAD" => session.head(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "POST" => session.post(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case "PUT" => session.put(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
+    case method => throw new Exception(s"Invalid Method: $method")
+  }
+}
+
+almaren.builder
+  .sql("...")
+  .httpRow(method = "POST", requestHandler = customHandler)
 ```
