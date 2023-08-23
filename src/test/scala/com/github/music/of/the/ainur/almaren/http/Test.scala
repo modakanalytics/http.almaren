@@ -159,8 +159,8 @@ class Test extends AnyFunSuite with BeforeAndAfter {
 
   val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
 
-    getHttpRowDf(requestDataframe, "POST", isSession = true).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowSession.parquet")
-    getHttpRowDf(requestDataframe, "POST", isSession = false).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowWithoutSession.parquet")
+//    getHttpRowDf(requestDataframe, "POST", isSession = true).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowSession.parquet")
+//    getHttpRowDf(requestDataframe, "POST", isSession = false).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowWithoutSession.parquet")
 
   val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
   val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
