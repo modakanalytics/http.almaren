@@ -5,20 +5,21 @@
 To add http.almaren dependency to your sbt build:
 
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.7-3.3"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.8-3.3"
 ```
 
 To run in spark-shell:
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.3"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.3"
 ```
 
 ## Table of Contents
 
 - [Methods](#methods)
   * [HTTP](#http)
-    + [Example](#example)
+    + [Example 01](#example-1)
+    + [Example 02](#example-2)
     + [Parameters](#parameters)
     + [Special Columns](#special-columns)
       - [Input:](#input-)
@@ -27,7 +28,7 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
     + [Session](#session)
     + [Request Handler](#request-handler)
   * [HTTP Batch](#http-batch)
-    + [Example](#example-1)
+    + [Example](#example)
     + [Parameters](#parameters-1)
     + [Special Columns](#special-columns-1)
       - [Input:](#input--1)
@@ -36,29 +37,20 @@ spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almare
     + [Request Handler Batch](#request-handler-batch)
       - [Batch Delimiter](#batch-delimiter)
       - [Examples](#examples)
-  * [HTTP Row](#http-row)
-    + [Example](#example-2)
-    + [Parameters](#parameters-2)
-    + [Special Columns](#special-columns-2)
-      - [Input:](#input-2)
-      - [Output:](#output-2)
-    + [Methods](#methods-3)
-    + [Session](#session-1)
-    + [Request Handler](#request-handler-1)
 
 HTTP Connector is available in [Maven Central](https://mvnrepository.com/artifact/com.github.music-of-the-ainur)
 repository.
 
 | versions                   | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
-| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.4` |
-| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.4` |
-| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.7-3.3` |
-| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.3` |
-| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.2` |
-| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.1` |
-| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-2.4` |
-| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.7-2.4` |
+| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.8-3.4` |
+| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.4` |
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.8-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.8-2.4` |
 
 ## Methods
 
@@ -75,7 +67,7 @@ $ curl -X PUT -H "Authorization: {SESSION_ID}" \
 https://localhost/objects/documents/534
 ```
 
-#### Example
+#### Example-1
 
 ```scala
 import com.github.music.of.the.ainur.almaren.Almaren
@@ -158,6 +150,111 @@ Output:
 +-----------+---------+--------+---+-----------+---------------------------------------------+-----+------------+
 ```
 
+#### Example-2
+
+```scala
+import com.github.music.of.the.ainur.almaren.Almaren
+import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
+import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
+import scala.collection.JavaConverters.asScalaIteratorConverter
+import spark.implicits._
+
+val almaren = Almaren("http-almaren")
+
+val df = Seq(
+  ("John", "Smith", "London"),
+  ("David", "Jones", "India"),
+  ("Michael", "Johnson", "Indonesia"),
+  ("Chris", "Lee", "Brazil"),
+  ("Mike", "Brown", "Russia")
+).toDF("first_name", "last_name", "country").coalesce(1)
+
+df.createOrReplaceTempView("person_info")
+val requestSchema = StructType(Seq(
+  StructField("__URL__", StringType),
+  StructField("__DATA__", StringType),
+  StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
+  StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
+  StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
+))
+
+//Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
+val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
+  val firstName = row.getAs[String]("first_name")
+  val lastName = row.getAs[String]("last_name")
+  val country = row.getAs[String]("country")
+  val url = s"http://localhost:3000/fireshots/getInfo"
+  val headers = scala.collection.mutable.Map[String, String]()
+  headers.put("data", firstName)
+  val params = scala.collection.mutable.Map[String, String]()
+  params.put("params", lastName)
+  val hiddenParams = scala.collection.mutable.Map[String, String]()
+  hiddenParams.put("hidden_params", country)
+
+  Row(url,
+    s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
+    headers,
+    params,
+    hiddenParams
+  )
+})
+
+val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
+val finalRequestDataframe = requestDataframe.selectExpr("monotonically_increasing_id() as __ID__", "*")
+
+val responseDf = almaren.builder
+  .sourceDataFrame(finalRequestDataframe).alias("REQUEST_DATA")
+  .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+  .http(method = "POST", params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample")).alias("RESPONSE_DATA")
+  .sql(
+    """select __BODY__ as http_request_response,
+      | b.__URL__ as http_request_url ,
+      | b.__DATA__ as http_payload,
+      | a.__REQUEST_HEADERS__ as http_request_headers,
+      | a.__REQUEST_PARAMS__ as http_request_params,
+      | a.__REQUEST_HIDDEN_PARAMS__ as http_request__hidden_params,
+      | __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__""".stripMargin)
+  .batch
+
+responseDf.show(false)
+```
+
+Output:
+
+```
+23/08/25 00:23:47 INFO SourceDataFrame: 
+23/08/25 00:23:47 INFO Alias: {REQUEST_DATA}
+23/08/25 00:23:47 INFO SqlExpr: exprs:{__ID__
+__DATA__
+__URL__
+__REQUEST_HEADERS__
+__REQUEST_PARAMS__
+__REQUEST_HIDDEN_PARAMS__}
+23/08/25 00:23:47 INFO HTTP: headers:{Map()},params:{Map(username -> sample)}, method:{POST}, connectTimeout:{60000}, readTimeout{1000}, threadPoolSize:{1}, batchSize:{5000}
+23/08/25 00:23:48 INFO JsonDeserializer: columnName:{__BODY__}, schema:{Some(`data` STRUCT<`age`: BIGINT, `country`: STRING, `full_name`: STRING, `salary`: BIGINT>)}, options:{Map()}, autoFlatten:{true}
+23/08/25 00:23:48 INFO Alias: {RESPONSE_DATA}
+23/08/25 00:23:48 INFO Sql: sql:{select data,http.Test 10s
+ b.__URL__ as http_request_url ,
+ b.__DATA__ as http_payload,
+ a.__REQUEST_HEADERS__ as http_request_headers,
+ a.__REQUEST_PARAMS__ as http_request_params,
+ a.__REQUEST_HIDDEN_PARAMS__ as http_request__hidden_params,
+ __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__}
+
++-------------------------------------------------------------------------------------+---------------------------------------+-----------------------------------------------------------------------+--------------------+-------------------+----------------------------+-----------+
+|http_request_response                                                                |http_request_url                       |http_payload                                                           |http_request_headers|http_request_params|http_request__hidden_params |status_code|
++-------------------------------------------------------------------------------------+---------------------------------------+-----------------------------------------------------------------------+--------------------+-------------------+----------------------------+-----------+
+|{"data":{"age":25,"country":"London","full_name":"JohnSmith","salary":25000}}        |http://localhost:3000/fireshots/getInfo|{"first_name" : "John","last_name":"Smith","country":"London"}         |{data -> John}      |{params -> Smith}  |{hidden_params -> London}   |200        |
+|{"data":{"age":25,"country":"India","full_name":"DavidJones","salary":25000}}        |http://localhost:3000/fireshots/getInfo|{"first_name" : "David","last_name":"Jones","country":"India"}         |{data -> David}     |{params -> Jones}  |{hidden_params -> India}    |200        |
+|{"data":{"age":25,"country":"Indonesia","full_name":"MichaelJohnson","salary":25000}}|http://localhost:3000/fireshots/getInfo|{"first_name" : "Michael","last_name":"Johnson","country":"Indonesia"} |{data -> Michael}   |{params -> Johnson}|{hidden_params -> Indonesia}|200        |
+|{"data":{"age":25,"country":"Brazil","full_name":"ChrisLee","salary":25000}}         |http://localhost:3000/fireshots/getInfo|{"first_name" : "Chris","last_name":"Lee","country":"Brazil"}          |{data -> Chris}     |{params -> Lee}    |{hidden_params -> Brazil}   |200        |
+|{"data":{"age":25,"country":"Russia","full_name":"MikeBrown","salary":25000}}        |http://localhost:3000/fireshots/getInfo|{"first_name" : "Mike","last_name":"Brown","country":"Russia"}         |{data -> Mike}      |{params -> Brown}  |{hidden_params -> Russia}   |200        |
++-------------------------------------------------------------------------------------+---------------------------------------+-----------------------------------------------------------------------+--------------------+-------------------+----------------------------+-----------+
+
+```
+
 #### Parameters
 
 | Parameter      | Description                                                                                                             | Type                                                               |
@@ -177,23 +274,28 @@ Output:
 
 ##### Input:
 
-| Parameters   | Mandatory | Description                                                                        |
-|--------------|-----------|------------------------------------------------------------------------------------|
-| \_\_ID\_\_   | Yes       | This field will be in response of http.almaren component, it's useful to join data |
-| \_\_URL\_\_  | Yes       | Used to perform the HTTP request                                                   |
-| \_\_DATA\_\_ | No        | Data Content, used in POST/PUT Method HTTP requests                                |
+| Parameters                    | Mandatory | Description                                                                                                            |
+|-------------------------------|-----------|------------------------------------------------------------------------------------------------------------------------|
+| \_\_ID\_\_                    | Yes       | This field will be in response of http.almaren component, it's useful to join data                                     |
+| \_\_URL\_\_                   | Yes       | Used to perform the HTTP request                                                                                       |
+| \_\_DATA\_\_                  | No        | Data Content, used in POST/PUT Method HTTP requests                                                                    |
+| \_\_REQUEST_HEADERS\_\_       | No        | A column containing HTTP headers represented as a Map of String key-value pairs.                                       | 
+| \_\_REQUEST_PARAMS\_\_        | No        | A column containing HTTP params represented as a Map of String key-value pairs.                                        | 
+| \_\_REQUEST_HIDDEN_PARAMS\_\_ | No        | A column containing HTTP params which are hidden (not exposed in logs) represented as a Map of String key-value pairs. | 
 
 ##### Output:
 
-| Parameters           | Description                                        |
-|----------------------|----------------------------------------------------|
-| \_\_ID\_\_           | Custom ID , This field will be useful to join data |
-| \_\_BODY\_\_         | HTTP response                                      |
-| \_\_HEADER\_\_       | HTTP header                                        |
-| \_\_STATUS_CODE\_\_  | HTTP response code                                 |
-| \_\_STATUS_MSG\_\_   | HTTP response message                              |
-| \_\_ERROR\_\_        | Java Exception                                     |
-| \_\_ELAPSED_TIME\_\_ | Request time in ms                                 |
+| Parameters           | Description                                         |
+|----------------------|-----------------------------------------------------|
+| \_\_ID\_\_           | Custom ID , This field will be useful to join data  |
+| \_\_BODY\_\_         | HTTP response                                       |
+| \_\_HEADER\_\_       | HTTP header                                         |
+| \_\_STATUS_CODE\_\_  | HTTP response code                                  |
+| \_\_STATUS_MSG\_\_   | HTTP response message                               |
+| \_\_ERROR\_\_        | Java Exception                                      |
+| \_\_ELAPSED_TIME\_\_ | Request time in ms                                  |
+| \_\_URL\_\_          | Http URL Used to perform the HTTP request           |
+| \_\_DATA\_\_         | Data Content, used in POST/PUT Method HTTP requests |
 
 #### Methods
 
@@ -415,92 +517,64 @@ https://localhost/objects/documents/batch
 
 ```scala
   import com.github.music.of.the.ainur.almaren.Almaren
-  import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-  import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
-  import org.apache.spark.sql.Row
-  import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
-  import scala.collection.JavaConverters.asScalaIteratorConverter
-  import spark.implicits._
-  
-  val almaren = Almaren("http-almaren")
-  
-  val df = Seq(
-    ("John", "Smith", "London"),
-    ("David", "Jones", "India"),
-    ("Michael", "Johnson", "Indonesia"),
-    ("Chris", "Lee", "Brazil"),
-    ("Mike", "Brown", "Russia")
-  ).toDF("first_name", "last_name", "country").coalesce(1)
-  
-  df.createOrReplaceTempView("person_info")
-  val requestSchema = StructType(Seq(
-    StructField("__URL__", StringType),
-    StructField("__DATA__", StringType),
-    StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
-    StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
-    StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
-  ))
-  
-  //Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
-  val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
-    val firstName = row.getAs[String]("first_name")
-    val lastName = row.getAs[String]("last_name")
-    val country = row.getAs[String]("country")
-    val url = s"http://localhost:3000/fireshots/getInfo"
-    val headers = scala.collection.mutable.Map[String, String]()
-    headers.put("data", firstName)
-    val params = scala.collection.mutable.Map[String, String]()
-    params.put("params", lastName)
-    val hiddenParams = scala.collection.mutable.Map[String, String]()
-    hiddenParams.put("hidden_params", country)
-  
-    Row(url,
-      s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
-      headers,
-      params,
-      hiddenParams
-    )
-  })
-  
-  val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
-  
-  
-  val responseDf = almaren.builder
-    .sourceDataFrame(requestDataframe)
-    .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
-    .httpRow(method = "POST")
-    .batch
-  
-  responseDf.show(false)
+import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
+import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
+import scala.collection.JavaConverters.asScalaIteratorConverter
+import spark.implicits._
+
+val almaren = Almaren("http-almaren")
+
+val df = Seq(
+  ("John", "Smith", "London"),
+  ("David", "Jones", "India"),
+  ("Michael", "Johnson", "Indonesia"),
+  ("Chris", "Lee", "Brazil"),
+  ("Mike", "Brown", "Russia")
+).toDF("first_name", "last_name", "country").coalesce(1)
+
+df.createOrReplaceTempView("person_info")
+val requestSchema = StructType(Seq(
+  StructField("__URL__", StringType),
+  StructField("__DATA__", StringType),
+  StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
+  StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
+  StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
+))
+
+//Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
+val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
+  val firstName = row.getAs[String]("first_name")
+  val lastName = row.getAs[String]("last_name")
+  val country = row.getAs[String]("country")
+  val url = s"http://localhost:3000/fireshots/getInfo"
+  val headers = scala.collection.mutable.Map[String, String]()
+  headers.put("data", firstName)
+  val params = scala.collection.mutable.Map[String, String]()
+  params.put("params", lastName)
+  val hiddenParams = scala.collection.mutable.Map[String, String]()
+  hiddenParams.put("hidden_params", country)
+
+  Row(url,
+    s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
+    headers,
+    params,
+    hiddenParams
+  )
+})
+
+val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
+
+
+val responseDf = almaren.builder
+  .sourceDataFrame(requestDataframe)
+  .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+  .httpRow(method = "POST")
+  .batch
+
+responseDf.show(false)
 ```
-
-Output:
-
-```
-23/08/22 13:08:35 INFO SourceDataFrame: 
-23/08/22 13:08:35 INFO SqlExpr: exprs:{monotonically_increasing_id() as __ID__
-__DATA__
-__URL__
-__REQUEST_HEADERS__
-__REQUEST_PARAMS__
-__REQUEST_HIDDEN_PARAMS__}
-23/08/22 13:08:35 INFO HTTPRow: method:{POST}, connectTimeout:{60000}, readTimeout{1000}, threadPoolSize:{1}, batchSize:{5000}
-23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> John)},params:{Map(params -> Smith)}
-23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Chris)},params:{Map(params -> Lee)}
-23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Michael)},params:{Map(params -> Johnson)}
-23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> David)},params:{Map(params -> Jones)}
-23/08/22 13:08:35 INFO HTTPRow: headers:{Map(data -> Mike)},params:{Map(params -> Brown)}
-
-+-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
-|__ID__     |__BODY__                                                                             |__HEADER__                                                                                                                                         |__STATUS_CODE__|__STATUS_MSG__|__ERROR__|__ELAPSED_TIME__|__URL__                                |__DATA__                                                               |__REQUEST_HEADERS__|__REQUEST_PARAMS__ |__REQUEST_HIDDEN_PARAMS__   |
-+-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
-|8589934592 |{"data":{"age":25,"country":"London","full_name":"JohnSmith","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |8               |http://localhost:3000/fireshots/getInfo|{"first_name" : "John","last_name":"Smith","country":"London"}         |{data -> John}     |{params -> Smith}  |{hidden_params -> London}   |
-|25769803776|{"data":{"age":25,"country":"India","full_name":"DavidJones","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |8               |http://localhost:3000/fireshots/getInfo|{"first_name" : "David","last_name":"Jones","country":"India"}         |{data -> David}    |{params -> Jones}  |{hidden_params -> India}    |
-|34359738368|{"data":{"age":25,"country":"Indonesia","full_name":"MichaelJohnson","salary":25000}}|{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [85]}|200            |OK            |null     |10              |http://localhost:3000/fireshots/getInfo|{"first_name" : "Michael","last_name":"Johnson","country":"Indonesia"} |{data -> Michael}  |{params -> Johnson}|{hidden_params -> Indonesia}|
-|51539607552|{"data":{"age":25,"country":"Brazil","full_name":"ChrisLee","salary":25000}}         |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [76]}|200            |OK            |null     |3               |http://localhost:3000/fireshots/getInfo|{"first_name" : "Chris","last_name":"Lee","country":"Brazil"}          |{data -> Chris}    |{params -> Lee}    |{hidden_params -> Brazil}   |
-|60129542144|{"data":{"age":25,"country":"Russia","full_name":"MikeBrown","salary":25000}}        |{date -> [Tue, 22 Aug 2023 07:35:49 GMT], content-type -> [application/json;charset=UTF-8], server -> [Mojolicious (Perl)], content-length -> [77]}|200            |OK            |null     |4               |http://localhost:3000/fireshots/getInfo|{"first_name" : "Mike","last_name":"Brown","country":"Russia"}         |{data -> Mike}     |{params -> Brown}  |{hidden_params -> Russia}   |
-+-----------+-------------------------------------------------------------------------------------+---------------------------------------------------------------------------------------------------------------------------------------------------+---------------+--------------+---------+----------------+---------------------------------------+-----------------------------------------------------------------------+-------------------+-------------------+----------------------------+
-``` 
 
 #### Parameters
 
@@ -517,10 +591,6 @@ __REQUEST_HIDDEN_PARAMS__}
 | threadPoolSize | How many connections in parallel for each executor. parallelism = number of excutors * number of cores * threadPoolSize | Int                                                                |
 | batchSize      | How many records a single thread will process                                                                           | Int                                                                |
 
-#### Special Columns
-
-##### Input:
-
 | Parameters                    | Mandatory | Description                                                                        | Column Type        |
 |-------------------------------|-----------|------------------------------------------------------------------------------------|--------------------|
 | \_\_ID\_\_                    | Yes       | This field will be in response of http.almaren component, it's useful to join data | String             |
@@ -529,8 +599,6 @@ __REQUEST_HIDDEN_PARAMS__}
 | \_\_REQUEST_HEADERS\_\_       | Yes       | HTTP headers                                                                       | Map[String,String] |
 | \_\_REQUEST_PARAMS\_\_        | Yes       | HTTP params                                                                        | Map[String,String] |
 | \_\_REQUEST_HIDDEN_PARAMS\_\_ | Yes       | HTTP params which are hidden (not exposed in logs)                                 | Map[String,String] |
-
-##### Output:
 
 | Parameters                    | Description                                                |
 |-------------------------------|------------------------------------------------------------|
@@ -547,54 +615,4 @@ __REQUEST_HIDDEN_PARAMS__}
 | \_\_REQUEST_PARAMS\_\_        | HTTP Request params                                        |
 | \_\_REQUEST_HIDDEN_PARAMS\_\_ | HTTP Request params which are hidden (not exposed in logs) |
 
-#### Methods
 
-The following methods are supported:
-
-- POST
-- GET
-- HEAD
-- OPTIONS
-- DELETE
-- PUT
-
-#### Session
-
-You can give an existing [session](https://github.com/lihaoyi/requests-scala#sessions) to the HTTP component.
-To see all details check the [documentation](https://github.com/lihaoyi/requests-scala#sessions)
-
-```scala
-val newSession = () => {
-  val s = requests.Session(headers = Map("Custom-header" -> "foo"))
-  s.post("https://bar.com/login", data = Map("user" -> "baz", "password" -> "123"))
-  s
-}
-
-almaren.builder
-  .sourceSql("....")
-  .httpRow(method = "GET", session = newSession)
-
-```
-
-#### Request Handler
-
-You can overwrite the default _requestHandler_ closure to give any custom HTTP Request.
-
-```scala
-
-val customHandler = (row: Row, session: Session, url: String, headers: Map[String, String], method: String, connectTimeout: Int, readTimeout: Int) => {
-  method.toUpperCase match {
-    case "GET" => session.get(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case "DELETE" => session.delete(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case "OPTIONS" => session.options(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case "HEAD" => session.head(url, headers = headers, readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case "POST" => session.post(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case "PUT" => session.put(url, headers = headers, data = row.getAs[String](Alias.DataCol), readTimeout = readTimeout, connectTimeout = connectTimeout)
-    case method => throw new Exception(s"Invalid Method: $method")
-  }
-}
-
-almaren.builder
-  .sql("...")
-  .httpRow(method = "POST", requestHandler = customHandler)
-```
