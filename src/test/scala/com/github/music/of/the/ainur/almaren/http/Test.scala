@@ -160,13 +160,11 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
 
   val finalRequestDataframe = requestDataframe.selectExpr("monotonically_increasing_id() as __ID__", "*")
-  println("step1 >>>>>>>>>>>>>>>>>>>>>")
+
   val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
   val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
 
-  println("step2 <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
   test(postSessionRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
-  println("step3<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<")
   test(postRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
 
 
