@@ -159,49 +159,39 @@ class Test extends AnyFunSuite with BeforeAndAfter {
 
   val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
 
-//    getHttpRowDf(requestDataframe, "POST", isSession = true).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowSession.parquet")
-//    getHttpRowDf(requestDataframe, "POST", isSession = false).repartition(1).write.mode("overwrite").parquet("src/test/resources/data/postRowWithoutSession.parquet")
+  val finalRequestDataframe = requestDataframe.selectExpr("monotonically_increasing_id() as __ID__", "*")
 
   val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
   val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
 
-  test(postSessionRowDf, getHttpRowDf(requestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
-  test(postRowDf, getHttpRowDf(requestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
+  test(postSessionRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
+  test(postRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
 
   def getHttpRowDf(df: DataFrame, methodType: String, isSession: Boolean): DataFrame = {
 
     val tempDf = if (isSession) {
       almaren.builder
-        .sourceDataFrame(df)
-        .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
-        .httpRow(method = methodType, session = newSession)
+        .sourceDataFrame(df).alias("REQUEST_DATA")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+        .http(method = methodType, session = newSession, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
     }
     else {
       almaren.builder
-        .sourceDataFrame(df)
-        .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
-        .httpRow(method = methodType)
+        .sourceDataFrame(df).alias("REQUEST_DATA")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+        .http(method = methodType, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
     }
 
     tempDf
-      .deserializer("JSON", "__BODY__", Some(schema)).alias("TABLE")
-      .sql("select __ID__,data,__STATUS_CODE__ as status_code,__ELAPSED_TIME__ as elapsed_time from TABLE").alias("PERSON_DATA")
-      .dsl(
-        """__ID__$__ID__:StringType
-          |elapsed_time$elapsed_time:LongType
-          |data.full_name$full_name:StringType
-          |data.country$country:StringType
-          |data.age$age:LongType
-          |data.salary$salary:DoubleType
-          |status_code$status_code:IntegerType""".stripMargin
-      ).alias("TABLE2")
+      .deserializer("JSON", "__BODY__", Some(schema)).alias("RESPONSE_DATA")
       .sql(
-        """select full_name ,
-           country
-           age,
-           salary,
-           T.status_code
-          from TABLE2 T join PERSON_DATA P on T.__ID__ = P.__ID__""")
+        """select data,
+          | b.__URL__ as http_request_url ,
+          | b.__DATA__ as http_payload,
+          | cast(a.__REQUEST_HEADERS__ as STRING) as http_request_headers,
+          | cast(a.__REQUEST_PARAMS__ as STRING) as http_request_params,
+          | cast(a.__REQUEST_HIDDEN_PARAMS__ as STRING) as http_request__hidden_params,
+          | __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__""".stripMargin)
       .batch
   }
 
