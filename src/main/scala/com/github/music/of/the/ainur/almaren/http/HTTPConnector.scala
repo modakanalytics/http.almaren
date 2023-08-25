@@ -32,20 +32,6 @@ final case class ResponseBatch(`__ID__`: Seq[String],
                                `__URL__`: String,
                                `__DATA__`: String)
 
-final case class ResponseRow(`__ID__`: String,
-                             `__BODY__`: Option[String] = None,
-                             `__HEADER__`: Map[String, Seq[String]] = Map(),
-                             `__STATUS_CODE__`: Option[Int] = None,
-                             `__STATUS_MSG__`: Option[String] = None,
-                             `__ERROR__`: Option[String] = None,
-                             `__ELAPSED_TIME__`: Long,
-                             `__URL__`: String,
-                             `__DATA__`: String,
-                             `__REQUEST_HEADERS__`: Map[String, String],
-                             `__REQUEST_PARAMS__`: Map[String, String],
-                             `__REQUEST_HIDDEN_PARAMS__`: Map[String, String])
-
-
 object Alias {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
@@ -89,10 +75,36 @@ private[almaren] case class HTTP(
   private def request(row: Row, session: Session): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString
     val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row, session, url, headers, params ++ hiddenParams, method, connectTimeout, readTimeout))
+
+    val headersRow = Try(row.getAs[Map[String, String]](Alias.HeadersCol)) match {
+      case scala.util.Success(s) => s
+      case scala.util.Failure(_) => Map[String, String]()
+    }
+
+    val paramsRow = Try(row.getAs[Map[String, String]](Alias.ParamsCol)) match {
+      case scala.util.Success(s) => s
+      case scala.util.Failure(_) => Map[String, String]()
+    }
+
+    val hiddenParamsRow = Try(row.getAs[Map[String, String]](Alias.HiddenParamsCol)) match {
+      case scala.util.Success(s) => s
+      case scala.util.Failure(_) => Map[String, String]()
+    }
+
+    val allHeaders = headers ++ headersRow
+    val allParams = params ++ paramsRow
+    val allHiddenParams = hiddenParams ++ hiddenParamsRow
+
+    logger.debug(s"headers:{$allHeaders},params:{$allParams}")
+
+    val response = Try(requestHandler(row, session, url, allHeaders, allParams ++ allHiddenParams, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString
-    val data = row.getAs[Any](Alias.DataCol).toString
+
+    val data = method.toUpperCase match {
+      case "PUT" | "POST" | "DELETE" => row.getAs[Any](Alias.DataCol).toString
+      case _ => ""
+    }
 
     def getResponse(r: requests.Response) = Response(
       id,
@@ -119,73 +131,6 @@ private[almaren] case class HTTP(
   }
 }
 
-private[almaren] case class HTTPRow(
-                                     method: String,
-                                     requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-                                     session: () => requests.Session,
-                                     connectTimeout: Int,
-                                     readTimeout: Int,
-                                     threadPoolSize: Int,
-                                     batchSize: Int) extends Main {
-
-  override def core(df: DataFrame): DataFrame = {
-    logger.info(s"method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
-
-    import df.sparkSession.implicits._
-
-    val result = df.mapPartitions(partition => {
-
-      implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
-      val data: Iterator[Future[Seq[ResponseRow]]] = partition.grouped(batchSize).map(rows => Future {
-        val s = session()
-        rows.map(row => request(row, s))
-      })
-      val requests: Future[Iterator[Seq[ResponseRow]]] = Future.sequence(data)
-      Await.result(requests, Duration.Inf).flatten
-    })
-    result.toDF
-  }
-
-  private def request(row: Row, session: Session): ResponseRow = {
-    val url = row.getAs[Any](Alias.UrlCol).toString
-    val params = row.getAs[Map[String, String]](Alias.ParamsCol)
-    val hiddenParams = row.getAs[Map[String, String]](Alias.HiddenParamsCol)
-    val headers = row.getAs[Map[String, String]](Alias.HeadersCol)
-    val startTime = System.currentTimeMillis()
-    val response = Try(requestHandler(row, session, url, headers, params ++ hiddenParams, method, connectTimeout, readTimeout))
-    val elapsedTime = System.currentTimeMillis() - startTime
-    val id = row.getAs[Any](Alias.IdCol).toString
-    val data = row.getAs[Any](Alias.DataCol).toString
-
-    logger.info(s"headers:{$headers},params:{$params}")
-
-    def getResponse(r: requests.Response) = ResponseRow(
-      id,
-      Some(r.text()),
-      r.headers,
-      Some(r.statusCode),
-      r.statusMessage match {
-        case null => None
-        case _ => Some(r.statusMessage)
-      },
-      `__ELAPSED_TIME__` = elapsedTime,
-      `__URL__` = url,
-      `__DATA__` = data,
-      `__REQUEST_HEADERS__` = headers,
-      `__REQUEST_PARAMS__` = params,
-      `__REQUEST_HIDDEN_PARAMS__` = hiddenParams
-    )
-
-    response match {
-      case Success(r) => getResponse(r)
-      case Failure(re: RequestFailedException) => getResponse(re.response)
-      case Failure(f) => {
-        logger.error("Almaren HTTP Request Error", f)
-        ResponseRow(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url, `__DATA__` = data, `__REQUEST_HEADERS__` = headers, `__REQUEST_PARAMS__` = params, `__REQUEST_HIDDEN_PARAMS__` = hiddenParams)
-      }
-    }
-  }
-}
 
 private[almaren] case class HTTPBatch(
                                        url: String,
@@ -305,23 +250,6 @@ private[almaren] trait HTTPConnector extends Core {
       readTimeout,
       batchSize,
       batchDelimiter
-    )
-
-  def httpRow(method: String,
-              requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response = HTTPConn.defaultHandler,
-              session: () => requests.Session = HTTPConn.defaultSession,
-              connectTimeout: Int = 60000,
-              readTimeout: Int = 1000,
-              threadPoolSize: Int = 1,
-              batchSize: Int = 5000): Option[Tree] =
-    HTTPRow(
-      method,
-      requestHandler,
-      session,
-      connectTimeout,
-      readTimeout,
-      threadPoolSize,
-      batchSize
     )
 }
 
