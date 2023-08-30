@@ -68,7 +68,6 @@ private[almaren] case class HTTP(
 
     import df.sparkSession.implicits._
 
-    df.columns
     val headersColExists = columnExists(df,Alias.HeadersCol)
     val paramsColExists = columnExists(df,Alias.ParamsCol)
     val hiddenParamsColExists = columnExists(df,Alias.HeadersCol)
