@@ -5,13 +5,13 @@
 To add http.almaren dependency to your sbt build:
 
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.7-3.2"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.8-3.2"
 ```
 
 To run in spark-shell:
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.2,com.github.music-of-the-ainur:http-almaren_2.12:1.2.7-3.2"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.9-3.2,com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.2"
 ```
 
 ## Table of Contents
