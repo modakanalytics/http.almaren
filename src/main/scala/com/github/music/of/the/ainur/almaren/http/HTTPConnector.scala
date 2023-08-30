@@ -46,16 +46,16 @@ object Alias {
 
 
 private[almaren] case class HTTP(
-                                  headers: Map[String, String],
-                                  params: Map[String, String],
-                                  hiddenParams: Map[String, String],
-                                  method: String,
-                                  requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
-                                  session: () => requests.Session,
-                                  connectTimeout: Int,
-                                  readTimeout: Int,
-                                  threadPoolSize: Int,
-                                  batchSize: Int) extends Main {
+  headers: Map[String, String],
+  params: Map[String, String],
+  hiddenParams: Map[String, String],
+  method: String,
+  requestHandler: (Row, Session, String, Map[String, String], Map[String, String], String, Int, Int) => requests.Response,
+  session: () => requests.Session,
+  connectTimeout: Int,
+  readTimeout: Int,
+  threadPoolSize: Int,
+  batchSize: Int) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
@@ -124,7 +124,7 @@ private[almaren] case class HTTP(
       `__ELAPSED_TIME__` = elapsedTime,
       `__URL__` = url,
       `__DATA__` = data
-    )
+   )
 
     response match {
       case Success(r) => getResponse(r)
@@ -242,7 +242,7 @@ private[almaren] trait HTTPConnector extends Core {
     readTimeout: Int = 1000,
     batchSize: Int = 5000,
     batchDelimiter: (Seq[Row]) => String = HTTPConn.defaultBatchDelimiter
-   ): Option[Tree] =
+  ): Option[Tree] =
     HTTPBatch(
       url,
       headers,
