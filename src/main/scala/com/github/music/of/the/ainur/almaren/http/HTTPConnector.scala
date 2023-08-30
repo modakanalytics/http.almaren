@@ -70,7 +70,7 @@ private[almaren] case class HTTP(
 
     val headersColExists = columnExists(df,Alias.HeadersCol)
     val paramsColExists = columnExists(df,Alias.ParamsCol)
-    val hiddenParamsColExists = columnExists(df,Alias.HeadersCol)
+    val hiddenParamsColExists = columnExists(df,Alias.HiddenParamsCol)
 
     val result = df.mapPartitions(partition => {
 
