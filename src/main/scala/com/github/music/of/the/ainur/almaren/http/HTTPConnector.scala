@@ -124,7 +124,7 @@ private[almaren] case class HTTP(
       `__ELAPSED_TIME__` = elapsedTime,
       `__URL__` = url,
       `__DATA__` = data
-   )
+    )
 
     response match {
       case Success(r) => getResponse(r)
@@ -149,7 +149,7 @@ private[almaren] case class HTTPBatch(
     readTimeout: Int,
     batchSize: Int,
     batchDelimiter: (Seq[Row]) => String
-   ) extends Main {
+  ) extends Main {
 
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"url:{$url}, headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, batchSize:{$batchSize}")
