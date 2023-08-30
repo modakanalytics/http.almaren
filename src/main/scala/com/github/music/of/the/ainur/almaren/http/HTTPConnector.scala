@@ -57,14 +57,21 @@ private[almaren] case class HTTP(
   threadPoolSize: Int,
   batchSize: Int) extends Main {
 
+  private def columnExists(df: DataFrame, colName: String): Option[String] =
+    Some(colName).filter(df.columns.contains)
+
+  private def getRowParam(row: Row, colNameExists: Option[String]): Map[String, String] =
+    colNameExists.map(name => row.getAs[Map[String, String]](name)).getOrElse(Map())
+
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
 
     import df.sparkSession.implicits._
 
-    val headersColExists = df.columns.contains(Alias.HeadersCol)
-    val paramsColExists = df.columns.contains(Alias.ParamsCol)
-    val hiddenParamsColExists = df.columns.contains(Alias.HiddenParamsCol)
+    df.columns
+    val headersColExists = columnExists(df,Alias.HeadersCol)
+    val paramsColExists = columnExists(df,Alias.ParamsCol)
+    val hiddenParamsColExists = columnExists(df,Alias.HeadersCol)
 
     val result = df.mapPartitions(partition => {
 
@@ -79,30 +86,19 @@ private[almaren] case class HTTP(
     result.toDF
   }
 
-  private def request(row: Row, session: Session, headersColExists: Boolean, paramsColExists: Boolean, hiddenParamsColExists: Boolean): Response = {
+  private def request(row: Row, session: Session, headersColExists: Option[String], paramsColExists: Option[String], hiddenParamsColExists: Option[String]): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString
     val startTime = System.currentTimeMillis()
 
-    val headersRow = headersColExists match {
-      case true => row.getAs[Map[String, String]](Alias.HeadersCol)
-      case _ => Map[String, String]()
-    }
-
-    val paramsRow = paramsColExists match {
-      case true => row.getAs[Map[String, String]](Alias.ParamsCol)
-      case _ => Map[String, String]()
-    }
-
-    val hiddenParamsRow = hiddenParamsColExists match {
-      case true => row.getAs[Map[String, String]](Alias.HiddenParamsCol)
-      case _ => Map[String, String]()
-    }
+    val headersRow = getRowParam(row, headersColExists)
+    val paramsRow = getRowParam(row, paramsColExists)
+    val hiddenParamsRow = getRowParam(row, hiddenParamsColExists)
 
     val allHeaders = headers ++ headersRow
     val allParams = params ++ paramsRow
     val allHiddenParams = hiddenParams ++ hiddenParamsRow
 
-    logger.debug(s"headers:{$allHeaders},params:{$allParams}")
+    logger.info(s"headers:{$allHeaders},params:{$allParams}")
     val response = Try(requestHandler(row, session, url, allHeaders, allParams ++ allHiddenParams, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString

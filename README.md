@@ -274,14 +274,14 @@ __HIDDEN_PARAMS__}
 
 ##### Input:
 
-| Parameters     | Mandatory | Description                                                                                                            |
-|----------------|-----------|------------------------------------------------------------------------------------------------------------------------|
-| \_\_ID\_\_     | Yes       | This field will be in response of http.almaren component, it's useful to join data                                     |
-| \_\_URL\_\_    | Yes       | Used to perform the HTTP request                                                                                       |
-| \_\_DATA\_\_   | No        | Data Content, used in POST/PUT Method HTTP requests                                                                    |
-| \_\_HEADERS\_\_ | No        | A column containing HTTP headers represented as a Map of String key-value pairs.                                       | 
-| \_\_PARAMS\_\_ | No        | A column containing HTTP params represented as a Map of String key-value pairs.                                        | 
-| \_\_HIDDEN_PARAMS\_\_ | No        | A column containing HTTP params which are hidden (not exposed in logs) represented as a Map of String key-value pairs. | 
+| Parameters     | Mandatory | Description                                                                                                                                                                                                                                                                               |
+|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| \_\_ID\_\_     | Yes       | This field will be in response of http.almaren component, it's useful to join data                                                                                                                                                                                                        |
+| \_\_URL\_\_    | Yes       | Used to perform the HTTP request                                                                                                                                                                                                                                                          |
+| \_\_DATA\_\_   | No        | Data Content, used in POST/PUT Method HTTP requests                                                                                                                                                                                                                                       |
+| \_\_HEADERS\_\_ | No        | A column that holds HTTP headers represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's headers as parameters                                                | 
+| \_\_PARAMS\_\_ | No        | A column that holds HTTP params represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's params as parameters                                                  | 
+| \_\_HIDDEN_PARAMS\_\_ | No        | A column that holds HTTP params which are hidden (not exposed in logs) , represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's hidden params as parameters. | 
 
 ##### Output:
 
