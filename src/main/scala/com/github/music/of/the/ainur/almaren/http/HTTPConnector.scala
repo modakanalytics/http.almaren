@@ -68,9 +68,9 @@ private[almaren] case class HTTP(
 
     import df.sparkSession.implicits._
 
-    val headersColExists = columnExists(df,Alias.HeadersCol)
-    val paramsColExists = columnExists(df,Alias.ParamsCol)
-    val hiddenParamsColExists = columnExists(df,Alias.HiddenParamsCol)
+    val headersColExists = columnExists(df, Alias.HeadersCol)
+    val paramsColExists = columnExists(df, Alias.ParamsCol)
+    val hiddenParamsColExists = columnExists(df, Alias.HiddenParamsCol)
 
     val result = df.mapPartitions(partition => {
 
@@ -126,7 +126,7 @@ private[almaren] case class HTTP(
       case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url,`__DATA__` = data)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url, `__DATA__` = data)
       }
     }
   }
