@@ -12,33 +12,36 @@ import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 import scala.util.{Failure, Success, Try}
 
-final case class Response(`__ID__`: String,
-                          `__BODY__`: Option[String] = None,
-                          `__HEADER__`: Map[String, Seq[String]] = Map(),
-                          `__STATUS_CODE__`: Option[Int] = None,
-                          `__STATUS_MSG__`: Option[String] = None,
-                          `__ERROR__`: Option[String] = None,
-                          `__ELAPSED_TIME__`: Long,
-                          `__URL__`: String,
-                          `__DATA__`: String)
+final case class Response(
+                           `__ID__`: String,
+                           `__BODY__`: Option[String] = None,
+                           `__HEADER__`: Map[String, Seq[String]] = Map(),
+                           `__STATUS_CODE__`: Option[Int] = None,
+                           `__STATUS_MSG__`: Option[String] = None,
+                           `__ERROR__`: Option[String] = None,
+                           `__ELAPSED_TIME__`: Long,
+                           `__URL__`: String,
+                           `__DATA__`: String)
 
-final case class ResponseBatch(`__ID__`: Seq[String],
-                               `__BODY__`: Option[String] = None,
-                               `__HEADER__`: Map[String, Seq[String]] = Map(),
-                               `__STATUS_CODE__`: Option[Int] = None,
-                               `__STATUS_MSG__`: Option[String] = None,
-                               `__ERROR__`: Option[String] = None,
-                               `__ELAPSED_TIME__`: Long,
-                               `__URL__`: String,
-                               `__DATA__`: String)
+final case class ResponseBatch(
+                                `__ID__`: Seq[String],
+                                `__BODY__`: Option[String] = None,
+                                `__HEADER__`: Map[String, Seq[String]] = Map(),
+                                `__STATUS_CODE__`: Option[Int] = None,
+                                `__STATUS_MSG__`: Option[String] = None,
+                                `__ERROR__`: Option[String] = None,
+                                `__ELAPSED_TIME__`: Long,
+                                `__URL__`: String,
+                                `__DATA__`: String)
+
 
 object Alias {
   val DataCol = "__DATA__"
   val IdCol = "__ID__"
   val UrlCol = "__URL__"
-  val ParamsCol = "__REQUEST_PARAMS__"
-  val HiddenParamsCol = "__REQUEST_HIDDEN_PARAMS__"
-  val HeadersCol = "__REQUEST_HEADERS__"
+  val ParamsCol = "__PARAMS__"
+  val HiddenParamsCol = "__HIDDEN_PARAMS__"
+  val HeadersCol = "__HEADERS__"
 }
 
 
@@ -54,17 +57,27 @@ private[almaren] case class HTTP(
                                   threadPoolSize: Int,
                                   batchSize: Int) extends Main {
 
+  private def columnExists(df: DataFrame, colName: String): Option[String] =
+    Some(colName).filter(df.columns.contains)
+
+  private def getRowParam(row: Row, colNameExists: Option[String]): Map[String, String] =
+    colNameExists.map(name => row.getAs[Map[String, String]](name)).getOrElse(Map())
+
   override def core(df: DataFrame): DataFrame = {
     logger.info(s"headers:{$headers},params:{$params}, method:{$method}, connectTimeout:{$connectTimeout}, readTimeout{$readTimeout}, threadPoolSize:{$threadPoolSize}, batchSize:{$batchSize}")
 
     import df.sparkSession.implicits._
+
+    val headersColExists = columnExists(df,Alias.HeadersCol)
+    val paramsColExists = columnExists(df,Alias.ParamsCol)
+    val hiddenParamsColExists = columnExists(df,Alias.HiddenParamsCol)
 
     val result = df.mapPartitions(partition => {
 
       implicit val ec: ExecutionContext = ExecutionContext.fromExecutor(Executors.newFixedThreadPool(threadPoolSize))
       val data: Iterator[Future[Seq[Response]]] = partition.grouped(batchSize).map(rows => Future {
         val s = session()
-        rows.map(row => request(row, s))
+        rows.map(row => request(row, s, headersColExists, paramsColExists, hiddenParamsColExists))
       })
       val requests: Future[Iterator[Seq[Response]]] = Future.sequence(data)
       Await.result(requests, Duration.Inf).flatten
@@ -72,31 +85,19 @@ private[almaren] case class HTTP(
     result.toDF
   }
 
-  private def request(row: Row, session: Session): Response = {
+  private def request(row: Row, session: Session, headersColExists: Option[String], paramsColExists: Option[String], hiddenParamsColExists: Option[String]): Response = {
     val url = row.getAs[Any](Alias.UrlCol).toString
     val startTime = System.currentTimeMillis()
 
-    val headersRow = Try(row.getAs[Map[String, String]](Alias.HeadersCol)) match {
-      case scala.util.Success(s) => s
-      case scala.util.Failure(_) => Map[String, String]()
-    }
-
-    val paramsRow = Try(row.getAs[Map[String, String]](Alias.ParamsCol)) match {
-      case scala.util.Success(s) => s
-      case scala.util.Failure(_) => Map[String, String]()
-    }
-
-    val hiddenParamsRow = Try(row.getAs[Map[String, String]](Alias.HiddenParamsCol)) match {
-      case scala.util.Success(s) => s
-      case scala.util.Failure(_) => Map[String, String]()
-    }
+    val headersRow = getRowParam(row, headersColExists)
+    val paramsRow = getRowParam(row, paramsColExists)
+    val hiddenParamsRow = getRowParam(row, hiddenParamsColExists)
 
     val allHeaders = headers ++ headersRow
     val allParams = params ++ paramsRow
     val allHiddenParams = hiddenParams ++ hiddenParamsRow
 
-    logger.debug(s"headers:{$allHeaders},params:{$allParams}")
-
+    logger.info(s"headers:{$allHeaders},params:{$allParams}")
     val response = Try(requestHandler(row, session, url, allHeaders, allParams ++ allHiddenParams, method, connectTimeout, readTimeout))
     val elapsedTime = System.currentTimeMillis() - startTime
     val id = row.getAs[Any](Alias.IdCol).toString
@@ -125,12 +126,11 @@ private[almaren] case class HTTP(
       case Failure(re: RequestFailedException) => getResponse(re.response)
       case Failure(f) => {
         logger.error("Almaren HTTP Request Error", f)
-        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url, `__DATA__` = data)
+        Response(id, `__ERROR__` = Some(f.getMessage), `__ELAPSED_TIME__` = elapsedTime, `__URL__` = url,`__DATA__` = data)
       }
     }
   }
 }
-
 
 private[almaren] case class HTTPBatch(
                                        url: String,
