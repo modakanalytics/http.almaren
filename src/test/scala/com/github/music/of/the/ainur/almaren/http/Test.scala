@@ -7,7 +7,11 @@ import com.github.music.of.the.ainur.almaren.Almaren
 import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
 import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
 import org.scalatest.funsuite.AnyFunSuite
+
+import scala.collection.JavaConverters.asScalaIteratorConverter
+import scala.collection.mutable
 
 class Test extends AnyFunSuite with BeforeAndAfter {
   val almaren = Almaren("http-almaren")
@@ -22,6 +26,7 @@ class Test extends AnyFunSuite with BeforeAndAfter {
 
 
   import org.apache.log4j.{Level, Logger}
+
   Logger.getLogger("com.github.music.of.the.ainur.almaren").setLevel(Level.INFO)
 
   import spark.implicits._
@@ -59,13 +64,13 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   test(getSessionDf, getHttpDf(queryGet, "GET", true), "GET with Session")
   test(getDf, getHttpDf(queryGet, "GET", false), "GET without Session")
 
-   
+
   def getHttpDf(query: String, methodType: String, isSession: Boolean): DataFrame = {
 
     val tempDf = if (isSession) {
       almaren.builder
         .sourceSql(query).alias("PERSON_DATA")
-        .http(params = Map("username" -> "sample"),hiddenParams = Map("username" -> "sample","password" -> "sample"),method = methodType, session = newSession)
+        .http(params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"), method = methodType, session = newSession)
     }
     else {
       almaren.builder
@@ -102,7 +107,7 @@ class Test extends AnyFunSuite with BeforeAndAfter {
     .httpBatch(
       url = "http://127.0.0.1:3000/batchAPI",
       params = Map("username" -> "sample"),
-      hiddenParams = Map("username" -> "sample","password" -> "sample"),
+      hiddenParams = Map("username" -> "sample", "password" -> "sample"),
       method = "POST",
       batchSize = 3,
       batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
@@ -122,6 +127,73 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   val getBatchDf = spark.read.parquet("src/test/resources/data/httpBatch.parquet")
 
   test(getBatchDf, httpBatchDf, "test for httpBatch method")
+
+
+  val requestSchema = StructType(Seq(
+    StructField("__URL__", StringType),
+    StructField("__DATA__", StringType),
+    StructField("__HEADERS__", MapType(StringType, StringType)),
+    StructField("__PARAMS__", MapType(StringType, StringType)),
+    StructField("__HIDDEN_PARAMS__", MapType(StringType, StringType))
+  ))
+
+  val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
+    val firstName = row.getAs[String]("first_name")
+    val lastName = row.getAs[String]("last_name")
+    val country = row.getAs[String]("country")
+    val url = s"http://localhost:3000/fireshots/getInfo"
+    val headers = scala.collection.mutable.Map[String, String]()
+    headers.put("data", firstName)
+    val params = scala.collection.mutable.Map[String, String]()
+    params.put("params", lastName)
+    val hiddenParams = scala.collection.mutable.Map[String, String]()
+    hiddenParams.put("hidden_params", country)
+
+    Row(url,
+      s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
+      headers,
+      params,
+      hiddenParams
+    )
+  })
+
+  val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
+
+  val finalRequestDataframe = requestDataframe.selectExpr("monotonically_increasing_id() as __ID__", "*")
+
+  val postSessionRowDf = spark.read.parquet("src/test/resources/data/postRowSession.parquet")
+  val postRowDf = spark.read.parquet("src/test/resources/data/postRowWithoutSession.parquet")
+
+  test(postSessionRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
+  test(postRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
+
+  def getHttpRowDf(df: DataFrame, methodType: String, isSession: Boolean): DataFrame = {
+
+    val tempDf = if (isSession) {
+      almaren.builder
+        .sourceDataFrame(df).alias("REQUEST_DATA")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__HEADERS__", "__PARAMS__", "__HIDDEN_PARAMS__")
+        .http(method = methodType, session = newSession, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
+    }
+    else {
+      almaren.builder
+        .sourceDataFrame(df).alias("REQUEST_DATA")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__HEADERS__", "__PARAMS__", "__HIDDEN_PARAMS__")
+        .http(method = methodType, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
+    }
+
+    tempDf
+      .deserializer("JSON", "__BODY__", Some(schema)).alias("RESPONSE_DATA")
+      .sql(
+        """select data,
+          | b.__URL__ as http_request_url ,
+          | b.__DATA__ as http_payload,
+          | cast(a.__HEADERS__ as STRING) as http_request_headers,
+          | cast(a.__PARAMS__ as STRING) as http_request_params,
+          | cast(a.__HIDDEN_PARAMS__ as STRING) as http_request__hidden_params,
+          | __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__""".stripMargin)
+      .batch
+  }
 
   // test(bigQueryDf, df, "Read bigQuery Test")
   def test(df1: DataFrame, df2: DataFrame, name: String): Unit = {
