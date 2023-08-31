@@ -283,6 +283,7 @@ __HIDDEN_PARAMS__}
 | \_\_PARAMS\_\_ | No        | A column that holds HTTP params represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's params as parameters                                                  | 
 | \_\_HIDDEN_PARAMS\_\_ | No        | A column that holds HTTP params which are hidden (not exposed in logs) , represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's hidden params as parameters. | 
 
+
 ##### Output:
 
 | Parameters           | Description                                         |
