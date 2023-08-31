@@ -175,9 +175,9 @@ df.createOrReplaceTempView("person_info")
 val requestSchema = StructType(Seq(
   StructField("__URL__", StringType),
   StructField("__DATA__", StringType),
-  StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
-  StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
-  StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
+  StructField("__HEADERS__", MapType(StringType, StringType)),
+  StructField("__PARAMS__", MapType(StringType, StringType)),
+  StructField("__HIDDEN_PARAMS__", MapType(StringType, StringType))
 ))
 
 //Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
@@ -206,15 +206,15 @@ val finalRequestDataframe = requestDataframe.selectExpr("monotonically_increasin
 
 val responseDf = almaren.builder
   .sourceDataFrame(finalRequestDataframe).alias("REQUEST_DATA")
-  .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+  .sqlExpr("__ID__", "__DATA__", "__URL__", "__HEADERS__", "__PARAMS__", "__HIDDEN_PARAMS__")
   .http(method = "POST", params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample")).alias("RESPONSE_DATA")
   .sql(
     """select __BODY__ as http_request_response,
       | b.__URL__ as http_request_url ,
       | b.__DATA__ as http_payload,
-      | a.__REQUEST_HEADERS__ as http_request_headers,
-      | a.__REQUEST_PARAMS__ as http_request_params,
-      | a.__REQUEST_HIDDEN_PARAMS__ as http_request__hidden_params,
+      | a.__HEADERS__ as http_request_headers,
+      | a.__PARAMS__ as http_request_params,
+      | a.__HIDDEN_PARAMS__ as http_request__hidden_params,
       | __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__""".stripMargin)
   .batch
 
@@ -229,18 +229,18 @@ Output:
 23/08/25 00:23:47 INFO SqlExpr: exprs:{__ID__
 __DATA__
 __URL__
-__REQUEST_HEADERS__
-__REQUEST_PARAMS__
-__REQUEST_HIDDEN_PARAMS__}
+__HEADERS__
+__PARAMS__
+__HIDDEN_PARAMS__}
 23/08/25 00:23:47 INFO HTTP: headers:{Map()},params:{Map(username -> sample)}, method:{POST}, connectTimeout:{60000}, readTimeout{1000}, threadPoolSize:{1}, batchSize:{5000}
 23/08/25 00:23:48 INFO JsonDeserializer: columnName:{__BODY__}, schema:{Some(`data` STRUCT<`age`: BIGINT, `country`: STRING, `full_name`: STRING, `salary`: BIGINT>)}, options:{Map()}, autoFlatten:{true}
 23/08/25 00:23:48 INFO Alias: {RESPONSE_DATA}
 23/08/25 00:23:48 INFO Sql: sql:{select data,http.Test 10s
  b.__URL__ as http_request_url ,
  b.__DATA__ as http_payload,
- a.__REQUEST_HEADERS__ as http_request_headers,
- a.__REQUEST_PARAMS__ as http_request_params,
- a.__REQUEST_HIDDEN_PARAMS__ as http_request__hidden_params,
+ a.__HEADERS__ as http_request_headers,
+ a.__PARAMS__ as http_request_params,
+ a.__HIDDEN_PARAMS__ as http_request__hidden_params,
  __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__}
 
 +-------------------------------------------------------------------------------------+---------------------------------------+-----------------------------------------------------------------------+--------------------+-------------------+----------------------------+-----------+
@@ -274,14 +274,14 @@ __REQUEST_HIDDEN_PARAMS__}
 
 ##### Input:
 
-| Parameters                    | Mandatory | Description                                                                                                            |
-|-------------------------------|-----------|------------------------------------------------------------------------------------------------------------------------|
-| \_\_ID\_\_                    | Yes       | This field will be in response of http.almaren component, it's useful to join data                                     |
-| \_\_URL\_\_                   | Yes       | Used to perform the HTTP request                                                                                       |
-| \_\_DATA\_\_                  | No        | Data Content, used in POST/PUT Method HTTP requests                                                                    |
-| \_\_REQUEST_HEADERS\_\_       | No        | A column containing HTTP headers represented as a Map of String key-value pairs.                                       | 
-| \_\_REQUEST_PARAMS\_\_        | No        | A column containing HTTP params represented as a Map of String key-value pairs.                                        | 
-| \_\_REQUEST_HIDDEN_PARAMS\_\_ | No        | A column containing HTTP params which are hidden (not exposed in logs) represented as a Map of String key-value pairs. | 
+| Parameters     | Mandatory | Description                                                                                                                                                                                                                                                                               |
+|----------------|-----------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| \_\_ID\_\_     | Yes       | This field will be in response of http.almaren component, it's useful to join data                                                                                                                                                                                                        |
+| \_\_URL\_\_    | Yes       | Used to perform the HTTP request                                                                                                                                                                                                                                                          |
+| \_\_DATA\_\_   | No        | Data Content, used in POST/PUT Method HTTP requests                                                                                                                                                                                                                                       |
+| \_\_HEADERS\_\_ | No        | A column that holds HTTP headers represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's headers as parameters                                                | 
+| \_\_PARAMS\_\_ | No        | A column that holds HTTP params represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's params as parameters                                                  | 
+| \_\_HIDDEN_PARAMS\_\_ | No        | A column that holds HTTP params which are hidden (not exposed in logs) , represented as a Map of key-value pairs in string format. If this column is found in the input or request DataFrame, its elements will be combined with the specified HTTP method's hidden params as parameters. | 
 
 ##### Output:
 
@@ -321,8 +321,8 @@ val newSession = () => {
 }
 
 almaren.builder
-  .sourceSql("SELECT concat('http://localhost:3000/user/',first_name,last_name,'/',country) as __URL__,id as __ID__")
-  .http(method = "GET", session = newSession)
+        .sourceSql("SELECT concat('http://localhost:3000/user/',first_name,last_name,'/',country) as __URL__,id as __ID__")
+        .http(method = "GET", session = newSession)
 
 ```
 
@@ -345,8 +345,8 @@ val customHandler = (row: Row, session: Session, url: String, headers: Map[Strin
 }
 
 almaren.builder
-  .sql("...")
-  .http(method = "POST", requestHandler = customHandler)
+        .sql("...")
+        .http(method = "POST", requestHandler = customHandler)
 ```
 
 ### HTTP Batch
@@ -373,14 +373,14 @@ import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
 import spark.implicits._
 
 val httpBatchDf = almaren.builder
-  .sourceDataFrame(df)
-  .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
-  .httpBatch(
-    url = "http://127.0.0.1:3000/batchAPI",
-    method = "POST",
-    batchSize = 3,
-    batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
-  .batch
+        .sourceDataFrame(df)
+        .sqlExpr("to_json(struct(*)) as __DATA__", "monotonically_increasing_id() as __ID__").alias("BATCH_DATA")
+        .httpBatch(
+          url = "http://127.0.0.1:3000/batchAPI",
+          method = "POST",
+          batchSize = 3,
+          batchDelimiter = (rows: Seq[Row]) => s"""[${rows.map(row => row.getAs[String](Alias.DataCol)).mkString(",")}]""")
+        .batch
 
 httpBatchDf.show(false)
 ```
@@ -468,8 +468,8 @@ val customHandlerBatch = (data: String, session: Session, url: String, headers: 
 }
 
 almaren.builder
-  .sql("...")
-  .httpBatch(method = "POST", requestHandler = customHandlerBatch)
+        .sql("...")
+        .httpBatch(method = "POST", requestHandler = customHandlerBatch)
 ```
 
 ##### Batch Delimiter
@@ -568,10 +568,10 @@ val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requ
 
 
 val responseDf = almaren.builder
-  .sourceDataFrame(requestDataframe)
-  .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
-  .httpRow(method = "POST")
-  .batch
+        .sourceDataFrame(requestDataframe)
+        .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+        .httpRow(method = "POST")
+        .batch
 
 responseDf.show(false)
 ```
