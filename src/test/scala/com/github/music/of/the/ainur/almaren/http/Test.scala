@@ -132,9 +132,9 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   val requestSchema = StructType(Seq(
     StructField("__URL__", StringType),
     StructField("__DATA__", StringType),
-    StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
-    StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
-    StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
+    StructField("__HEADERS__", MapType(StringType, StringType)),
+    StructField("__PARAMS__", MapType(StringType, StringType)),
+    StructField("__HIDDEN_PARAMS__", MapType(StringType, StringType))
   ))
 
   val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
@@ -167,20 +167,18 @@ class Test extends AnyFunSuite with BeforeAndAfter {
   test(postSessionRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = true), "POST with Headers and Params from ROW with Session")
   test(postRowDf, getHttpRowDf(finalRequestDataframe, "POST", isSession = false), "POST with Headers and Params from ROW without Session")
 
-
-
   def getHttpRowDf(df: DataFrame, methodType: String, isSession: Boolean): DataFrame = {
 
     val tempDf = if (isSession) {
       almaren.builder
         .sourceDataFrame(df).alias("REQUEST_DATA")
-        .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__HEADERS__", "__PARAMS__", "__HIDDEN_PARAMS__")
         .http(method = methodType, session = newSession, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
     }
     else {
       almaren.builder
         .sourceDataFrame(df).alias("REQUEST_DATA")
-        .sqlExpr("__ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
+        .sqlExpr("__ID__", "__DATA__", "__URL__", "__HEADERS__", "__PARAMS__", "__HIDDEN_PARAMS__")
         .http(method = methodType, params = Map("username" -> "sample"), hiddenParams = Map("username" -> "sample", "password" -> "sample"))
     }
 
@@ -190,9 +188,9 @@ class Test extends AnyFunSuite with BeforeAndAfter {
         """select data,
           | b.__URL__ as http_request_url ,
           | b.__DATA__ as http_payload,
-          | cast(a.__REQUEST_HEADERS__ as STRING) as http_request_headers,
-          | cast(a.__REQUEST_PARAMS__ as STRING) as http_request_params,
-          | cast(a.__REQUEST_HIDDEN_PARAMS__ as STRING) as http_request__hidden_params,
+          | cast(a.__HEADERS__ as STRING) as http_request_headers,
+          | cast(a.__PARAMS__ as STRING) as http_request_params,
+          | cast(a.__HIDDEN_PARAMS__ as STRING) as http_request__hidden_params,
           | __STATUS_CODE__ as status_code from REQUEST_DATA a INNER JOIN RESPONSE_DATA b on a.__ID__=b.__ID__""".stripMargin)
       .batch
   }
