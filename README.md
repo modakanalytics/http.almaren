@@ -5,13 +5,13 @@
 To add http.almaren dependency to your sbt build:
 
 ```
-libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.8-3.3"
+libraryDependencies += "com.github.music-of-the-ainur" %% "http-almaren" % "1.2.9-3.3"
 ```
 
 To run in spark-shell:
 
 ```
-spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.10-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.3"
+spark-shell --master "local[*]" --packages "com.github.music-of-the-ainur:almaren-framework_2.12:0.9.10-3.3,com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-3.3"
 ```
 
 ## Table of Contents
@@ -43,14 +43,14 @@ repository.
 
 | versions                   | Connector Artifact                                          |
 |----------------------------|-------------------------------------------------------------|
-| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.8-3.4` |
-| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.4` |
-| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.8-3.3` |
-| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.3` |
-| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.2` |
-| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-3.1` |
-| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.8-2.4` |
-| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.8-2.4` |
+| Spark 3.4.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.9-3.4` |
+| Spark 3.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-3.4` |
+| Spark 3.3.x and scala 2.13 | `com.github.music-of-the-ainur:http-almaren_2.13:1.2.9-3.3` |
+| Spark 3.3.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-3.3` |
+| Spark 3.2.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-3.2` |
+| Spark 3.1.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-3.1` |
+| Spark 2.4.x and scala 2.12 | `com.github.music-of-the-ainur:http-almaren_2.12:1.2.9-2.4` |
+| Spark 2.4.x and scala 2.11 | `com.github.music-of-the-ainur:http-almaren_2.11:1.2.9-2.4` |
 
 ## Methods
 
@@ -501,80 +501,6 @@ How to concatenate by new line:
 (rows: Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 ```
 
-### HTTP Row
-
-It will initiate an HTTP request for each Row, extracting headers, parameters, and hidden parameters from each Row.
-
-```
-$ curl -X PUT -H "Authorization: {SESSION_ID}" \
--H "Content-Type: text/csv" \
--H "Accept: text/csv" \
---data-binary @"filename" \
-https://localhost/objects/documents/batch
-```
-
-#### Example
-
-```scala
-  import com.github.music.of.the.ainur.almaren.Almaren
-import com.github.music.of.the.ainur.almaren.builder.Core.Implicit
-import com.github.music.of.the.ainur.almaren.http.HTTPConn.HTTPImplicit
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.types.{MapType, StringType, StructField, StructType}
-import scala.collection.JavaConverters.asScalaIteratorConverter
-import spark.implicits._
-
-val almaren = Almaren("http-almaren")
-
-val df = Seq(
-  ("John", "Smith", "London"),
-  ("David", "Jones", "India"),
-  ("Michael", "Johnson", "Indonesia"),
-  ("Chris", "Lee", "Brazil"),
-  ("Mike", "Brown", "Russia")
-).toDF("first_name", "last_name", "country").coalesce(1)
-
-df.createOrReplaceTempView("person_info")
-val requestSchema = StructType(Seq(
-  StructField("__URL__", StringType),
-  StructField("__DATA__", StringType),
-  StructField("__REQUEST_HEADERS__", MapType(StringType, StringType)),
-  StructField("__REQUEST_PARAMS__", MapType(StringType, StringType)),
-  StructField("__REQUEST_HIDDEN_PARAMS__", MapType(StringType, StringType))
-))
-
-//Constructing the request dataframe by generating necessary input columns from each row in the input dataframe.
-val requestRows: Seq[Row] = df.toLocalIterator.asScala.toList.map(row => {
-  val firstName = row.getAs[String]("first_name")
-  val lastName = row.getAs[String]("last_name")
-  val country = row.getAs[String]("country")
-  val url = s"http://localhost:3000/fireshots/getInfo"
-  val headers = scala.collection.mutable.Map[String, String]()
-  headers.put("data", firstName)
-  val params = scala.collection.mutable.Map[String, String]()
-  params.put("params", lastName)
-  val hiddenParams = scala.collection.mutable.Map[String, String]()
-  hiddenParams.put("hidden_params", country)
-
-  Row(url,
-    s"""{"first_name" : "$firstName","last_name":"$lastName","country":"$country"} """,
-    headers,
-    params,
-    hiddenParams
-  )
-})
-
-val requestDataframe = spark.createDataFrame(spark.sparkContext.parallelize(requestRows), requestSchema)
-
-
-val responseDf = almaren.builder
-        .sourceDataFrame(requestDataframe)
-        .sqlExpr("monotonically_increasing_id() as __ID__", "__DATA__", "__URL__", "__REQUEST_HEADERS__", "__REQUEST_PARAMS__", "__REQUEST_HIDDEN_PARAMS__")
-        .httpRow(method = "POST")
-        .batch
-
-responseDf.show(false)
-```
 
 #### Parameters
 
