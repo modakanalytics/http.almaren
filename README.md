@@ -500,4 +500,4 @@ How to concatenate by new line:
 ```scala
 (rows: Seq[Row]) => rows.map(row => row.getAs[String](Alias.DataCol)).mkString("\n")
 ```
-,
+
