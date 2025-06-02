@@ -2,12 +2,13 @@ ThisBuild / name := "http.almaren"
 ThisBuild / organization := "com.github.music-of-the-ainur"
 
 lazy val scala212 = "2.12.10"
-lazy val scala213 = "2.13.9"
+//lazy val scala213 = "2.13.9"
 
-crossScalaVersions := Seq(scala212,scala213)
-ThisBuild / scalaVersion := scala213
+//crossScalaVersions := Seq(scala212,scala213)
+crossScalaVersions := Seq(scala212)
+ThisBuild / scalaVersion := scala212
 
-val sparkVersion = "3.4.1"
+val sparkVersion = "3.5.2"
 val majorVersionReg = "([0-9]+\\.[0-9]+).{0,}".r
 
 val majorVersionReg(majorVersion) = sparkVersion
@@ -17,7 +18,7 @@ scalacOptions ++= Seq("-deprecation", "-feature")
 libraryDependencies ++= Seq(
   "org.apache.spark" %% "spark-core" % sparkVersion % "provided",
   "org.apache.spark" %% "spark-sql" % sparkVersion % "provided",
-  "com.github.music-of-the-ainur" %% "almaren-framework" % s"0.9.10-${majorVersion}" % "provided",
+  "com.github.music-of-the-ainur" %% "almaren-framework" % s"0.9.11-${majorVersion}" % "provided",
   "com.lihaoyi" %% "requests" % "0.7.1",
   "com.typesafe.scala-logging" %% "scala-logging" % "3.9.5",
   "org.scalatest" %% "scalatest" % "3.2.14" % "test"
